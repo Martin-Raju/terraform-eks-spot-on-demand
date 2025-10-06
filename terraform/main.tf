@@ -87,7 +87,7 @@ module "vpc" {
   # }
 # }
 # -------------------------
-# EKS Cluster with Karpenter
+# EKS Cluster Module
 # -------------------------
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
@@ -95,25 +95,17 @@ module "eks" {
 
   cluster_name    = module.label.id
   cluster_version = var.kubernetes_version
-  subnets         = module.vpc.private_subnets
   vpc_id          = module.vpc.vpc_id
+  subnet_ids      = module.vpc.private_subnets
   enable_irsa     = true
+
+  manage_aws_auth = true
+
+  # Disable default node groups (Karpenter will handle nodes)
   node_groups = {}
 
-  # -------------------------------
-  # Karpenter submodule
-  # -------------------------------
-  karpenter = {
-    enable_karpenter = true
-    # Optional: can be customized for multiple provisioners
-    provisioners = [
-      {
-        name           = "default"
-        capacity_types = ["spot", "on-demand"]
-        subnet_ids     = module.vpc.private_subnets
-        tags           = { "kubernetes.io/cluster/${module.label.id}" = "owned" }
-      }
-    ]
+  tags = {
+    cluster = var.cluster_name
   }
 
   # Access for current IAM user
@@ -126,7 +118,6 @@ module "eks" {
           policy_arn   = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSAdminPolicy"
           access_scope = { type = "cluster" }
         }
-
         cluster_admin = {
           policy_arn   = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
           access_scope = { type = "cluster" }
@@ -134,8 +125,25 @@ module "eks" {
       }
     }
   }
+}
+
+# -------------------------
+# Karpenter Submodule
+# -------------------------
+module "eks_karpenter" {
+  source  = "terraform-aws-modules/eks/aws//modules/karpenter"
+  version = "21.3.1"
+
+  cluster_name                      = module.eks.cluster_id
+  cluster_endpoint                  = module.eks.cluster_endpoint
+  cluster_certificate_authority_data = module.eks.cluster_certificate_authority_data
+  subnets                           = module.vpc.private_subnets
+  service_account_role_name          = "karpenter"
+
+  # Spot + On-Demand
+  default_capacity_type = ["spot","on-demand"]
 
   tags = {
-    cluster = var.cluster_name
+    "kubernetes.io/cluster/${module.label.id}" = "owned"
   }
 }
