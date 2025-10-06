@@ -94,7 +94,7 @@ module "eks" {
   version = "21.3.1"
 
   name                            = module.label.id
-  version                         = var.kubernetes_version
+  kubernetes_version              = var.kubernetes_version
   subnet_ids                      = module.vpc.private_subnets
   vpc_id                          = module.vpc.vpc_id
   enable_irsa                     = true
