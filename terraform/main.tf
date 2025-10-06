@@ -100,7 +100,6 @@ module "eks" {
   enable_irsa                     = true
   endpoint_public_access  = false
   endpoint_private_access = true
-  node_groups = {}
   tags = {
     cluster = var.cluster_name
   }
