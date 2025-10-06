@@ -99,10 +99,7 @@ module "eks" {
   vpc_id                          = module.vpc.vpc_id
   enable_irsa                     = true
   cluster_endpoint_public_access  = false
-  cluster_endpoint_private_access = true
-
-  # Disable default node groups (Karpenter will handle nodes)
-  node_groups = {}
+  endpoint_private_access = true
 
   tags = {
     cluster = var.cluster_name
