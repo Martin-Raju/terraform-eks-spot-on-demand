@@ -124,34 +124,16 @@ module "eks" {
     }
   }
 }
-# -------------------------
-# Karpenter configuration
-# -------------------------
-module "karpenter" {
-  source  = "aws-ia/karpenter/aws"
-  version = "2.8.0"
-
-  cluster_name = module.eks.cluster_name
-  cluster_endpoint = module.eks.cluster_endpoint
-  cluster_certificate_authority_data = module.eks.cluster_certificate_authority_data
-  subnets = module.vpc.private_subnets
-  service_account_name = "karpenter"
-  service_account_namespace = "karpenter"
-
-  tags = {
-    "kubernetes.io/cluster/${var.cluster_name}" = "owned"
-  }
-}
 
 # -------------------------
 # Karpenter Submodule
 # -------------------------
-# module "eks_karpenter" {
-  # source  = "terraform-aws-modules/eks/aws//modules/karpenter"
-  # version = "21.3.1"
-  # cluster_name             = module.eks.cluster_id
+module "eks_karpenter" {
+   source  = "terraform-aws-modules/eks/aws//modules/karpenter"
+   version = "21.3.1"
+   cluster_name             = module.eks.cluster_id
 
-  # tags = {
-    # "kubernetes.io/cluster/${module.label.id}" = "owned"
-  # }
-# }
+   tags = {
+     "kubernetes.io/cluster/${module.label.id}" = "owned"
+   }
+ }
