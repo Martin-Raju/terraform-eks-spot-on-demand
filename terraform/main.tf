@@ -54,20 +54,69 @@ module "vpc" {
 # EKS Cluster Module
 # -------------------------
 
-module "eks" {
-  source                          = "./modules/eks"
-  cluster_name                    = module.label.id
-  cluster_version                 = var.kubernetes_version
-  subnet_ids                      = module.vpc.private_subnets
-  vpc_id                          = module.vpc.vpc_id
-  enable_irsa                     = true
-  cluster_endpoint_public_access  = false
-  cluster_endpoint_private_access = true
+# module "eks" {
+  # source                          = "./modules/eks"
+  # cluster_name                    = module.label.id
+  # cluster_version                 = var.kubernetes_version
+  # subnet_ids                      = module.vpc.private_subnets
+  # vpc_id                          = module.vpc.vpc_id
+  # enable_irsa                     = true
+  # cluster_endpoint_public_access  = false
+  # cluster_endpoint_private_access = true
 
-  tags = {
-    cluster = var.cluster_name
+  # tags = {
+    # cluster = var.cluster_name
+  # }
+
+  # access_entries = {
+    # user_access = {
+      # principal_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/${local.iam_username}"
+
+      # policy_associations = {
+        # admin = {
+          # policy_arn   = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSAdminPolicy"
+          # access_scope = { type = "cluster" }
+        # }
+
+        # cluster_admin = {
+          # policy_arn   = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+          # access_scope = { type = "cluster" }
+        # }
+      # }
+    # }
+  # }
+# }
+# -------------------------
+# EKS Cluster with Karpenter
+# -------------------------
+module "eks" {
+  source  = "terraform-aws-modules/eks/aws"
+  version = "21.3.1"
+
+  cluster_name    = module.label.id
+  cluster_version = var.kubernetes_version
+  subnets         = module.vpc.private_subnets
+  vpc_id          = module.vpc.vpc_id
+  enable_irsa     = true
+  node_groups = {}
+
+  # -------------------------------
+  # Karpenter submodule
+  # -------------------------------
+  karpenter = {
+    enable_karpenter = true
+    # Optional: can be customized for multiple provisioners
+    provisioners = [
+      {
+        name           = "default"
+        capacity_types = ["spot", "on-demand"]
+        subnet_ids     = module.vpc.private_subnets
+        tags           = { "kubernetes.io/cluster/${module.label.id}" = "owned" }
+      }
+    ]
   }
 
+  # Access for current IAM user
   access_entries = {
     user_access = {
       principal_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/${local.iam_username}"
@@ -84,5 +133,9 @@ module "eks" {
         }
       }
     }
+  }
+
+  tags = {
+    cluster = var.cluster_name
   }
 }
