@@ -104,8 +104,9 @@ module "eks" {
   tags = {
     cluster = var.cluster_name
   }
-
-  # Access for current IAM user
+#-------------------------------------
+# Access for current IAM user
+#-------------------------------------
   access_entries = {
     user_access = {
       principal_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/${local.iam_username}"
@@ -123,16 +124,32 @@ module "eks" {
     }
   }
 }
-
+# -------------------------
+# Karpenter configuration
+# -------------------------
+karpenter = {
+  enable_karpenter = true
+   # Example provisioner for spot + on-demand
+  provisioners = [
+    {
+      name           = "default"
+      capacity_types = ["spot", "on-demand"]
+      subnet_ids     = module.vpc.private_subnets
+      tags = {
+        "kubernetes.io/cluster/${var.cluster_name}" = "owned"
+      }
+    }
+  ]
+}
 # -------------------------
 # Karpenter Submodule
 # -------------------------
-module "eks_karpenter" {
-  source  = "terraform-aws-modules/eks/aws//modules/karpenter"
-  version = "21.3.1"
-  cluster_name             = module.eks.cluster_id
+# module "eks_karpenter" {
+  # source  = "terraform-aws-modules/eks/aws//modules/karpenter"
+  # version = "21.3.1"
+  # cluster_name             = module.eks.cluster_id
 
-  tags = {
-    "kubernetes.io/cluster/${module.label.id}" = "owned"
-  }
-}
+  # tags = {
+    # "kubernetes.io/cluster/${module.label.id}" = "owned"
+  # }
+# }
