@@ -98,7 +98,7 @@ module "eks" {
   subnet_ids                      = module.vpc.private_subnets
   vpc_id                          = module.vpc.vpc_id
   enable_irsa                     = true
-  cluster_endpoint_public_access  = false
+  endpoint_public_access  = false
   endpoint_private_access = true
 
   tags = {
