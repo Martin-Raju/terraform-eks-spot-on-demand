@@ -13,9 +13,9 @@ locals {
 # -------------------------
 
 module "label" {
-  source        = "./modules/terraform-null-label"
-  name          = var.cluster_name
-  environment   = var.environment
+  source      = "./modules/terraform-null-label"
+  name        = var.cluster_name
+  environment = var.environment
 }
 
 # -------------------------
@@ -74,12 +74,12 @@ module "eks" {
 
       policy_associations = {
         admin = {
-          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSAdminPolicy"
+          policy_arn   = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSAdminPolicy"
           access_scope = { type = "cluster" }
         }
 
         cluster_admin = {
-          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+          policy_arn   = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
           access_scope = { type = "cluster" }
         }
       }
