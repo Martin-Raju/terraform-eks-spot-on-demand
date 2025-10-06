@@ -54,61 +54,20 @@ module "vpc" {
 # EKS Cluster Module
 # -------------------------
 
-# module "eks" {
-  # source                          = "./modules/eks"
-  # cluster_name                    = module.label.id
-  # cluster_version                 = var.kubernetes_version
-  # subnet_ids                      = module.vpc.private_subnets
-  # vpc_id                          = module.vpc.vpc_id
-  # enable_irsa                     = true
-  # cluster_endpoint_public_access  = false
-  # cluster_endpoint_private_access = true
-
-  # tags = {
-    # cluster = var.cluster_name
-  # }
-
-  # access_entries = {
-    # user_access = {
-      # principal_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/${local.iam_username}"
-
-      # policy_associations = {
-        # admin = {
-          # policy_arn   = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSAdminPolicy"
-          # access_scope = { type = "cluster" }
-        # }
-
-        # cluster_admin = {
-          # policy_arn   = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
-          # access_scope = { type = "cluster" }
-        # }
-      # }
-    # }
-  # }
-# }
-# -------------------------
-# EKS Cluster Module
-# -------------------------
 module "eks" {
-  source  = "terraform-aws-modules/eks/aws"
-  version = "21.3.1"
-
-  cluster_name    = module.label.id
-  cluster_version = var.kubernetes_version
-  vpc_id          = module.vpc.vpc_id
-  subnet_ids      = module.vpc.private_subnets
-  enable_irsa     = true
-
-  manage_aws_auth = true
-
-  # Disable default node groups (Karpenter will handle nodes)
-  node_groups = {}
+  source                          = "./modules/eks"
+  cluster_name                    = module.label.id
+  cluster_version                 = var.kubernetes_version
+  subnet_ids                      = module.vpc.private_subnets
+  vpc_id                          = module.vpc.vpc_id
+  enable_irsa                     = true
+  cluster_endpoint_public_access  = false
+  cluster_endpoint_private_access = true
 
   tags = {
     cluster = var.cluster_name
   }
 
-  # Access for current IAM user
   access_entries = {
     user_access = {
       principal_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/${local.iam_username}"
@@ -118,6 +77,7 @@ module "eks" {
           policy_arn   = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSAdminPolicy"
           access_scope = { type = "cluster" }
         }
+
         cluster_admin = {
           policy_arn   = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
           access_scope = { type = "cluster" }
@@ -126,24 +86,64 @@ module "eks" {
     }
   }
 }
+# # -------------------------
+# # EKS Cluster Module
+# # -------------------------
+# module "eks" {
+  # source  = "terraform-aws-modules/eks/aws"
+  # version = "21.3.1"
 
-# -------------------------
-# Karpenter Submodule
-# -------------------------
-module "eks_karpenter" {
-  source  = "terraform-aws-modules/eks/aws//modules/karpenter"
-  version = "21.3.1"
+  # cluster_name    = module.label.id
+  # cluster_version = var.kubernetes_version
+  # vpc_id          = module.vpc.vpc_id
+  # subnet_ids      = module.vpc.private_subnets
+  # enable_irsa     = true
 
-  cluster_name                      = module.eks.cluster_id
-  cluster_endpoint                  = module.eks.cluster_endpoint
-  cluster_certificate_authority_data = module.eks.cluster_certificate_authority_data
-  subnets                           = module.vpc.private_subnets
-  service_account_role_name          = "karpenter"
+  # manage_aws_auth = true
 
-  # Spot + On-Demand
-  default_capacity_type = ["spot","on-demand"]
+  # # Disable default node groups (Karpenter will handle nodes)
+  # node_groups = {}
 
-  tags = {
-    "kubernetes.io/cluster/${module.label.id}" = "owned"
-  }
-}
+  # tags = {
+    # cluster = var.cluster_name
+  # }
+
+  # # Access for current IAM user
+  # access_entries = {
+    # user_access = {
+      # principal_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/${local.iam_username}"
+
+      # policy_associations = {
+        # admin = {
+          # policy_arn   = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSAdminPolicy"
+          # access_scope = { type = "cluster" }
+        # }
+        # cluster_admin = {
+          # policy_arn   = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+          # access_scope = { type = "cluster" }
+        # }
+      # }
+    # }
+  # }
+# }
+
+# # -------------------------
+# # Karpenter Submodule
+# # -------------------------
+# module "eks_karpenter" {
+  # source  = "terraform-aws-modules/eks/aws//modules/karpenter"
+  # version = "21.3.1"
+
+  # cluster_name                      = module.eks.cluster_id
+  # cluster_endpoint                  = module.eks.cluster_endpoint
+  # cluster_certificate_authority_data = module.eks.cluster_certificate_authority_data
+  # subnets                           = module.vpc.private_subnets
+  # service_account_role_name          = "karpenter"
+
+  # # Spot + On-Demand
+  # default_capacity_type = ["spot","on-demand"]
+
+  # tags = {
+    # "kubernetes.io/cluster/${module.label.id}" = "owned"
+  # }
+# }
