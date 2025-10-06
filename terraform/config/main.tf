@@ -13,7 +13,7 @@ locals {
 # -------------------------
 
 module "label" {
-  source        = "../../modules/terraform-null-label"
+  source        = "./modules/terraform-null-label"
   name          = var.cluster_name
   environment   = var.environment
 }
@@ -22,7 +22,7 @@ module "label" {
 # VPC Module
 # -------------------------
 module "vpc" {
-  source               = "../modules/vpc"
+  source               = "./modules/vpc"
   name                 = "${module.label.environment}-vpc"
   cidr                 = var.vpc_cidr
   azs                  = data.aws_availability_zones.available.names
@@ -55,7 +55,7 @@ module "vpc" {
 # -------------------------
 
 module "eks" {
-  source                          = "../modules/eks"
+  source                          = "./modules/eks"
   cluster_name                    = module.label.id
   cluster_version                 = var.kubernetes_version
   subnet_ids                      = module.vpc.private_subnets
