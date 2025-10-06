@@ -100,9 +100,9 @@ module "eks" {
   enable_irsa                     = true
   endpoint_public_access  = false
   endpoint_private_access = true
-  tags = {
-    cluster = var.cluster_name
-  }
+#  tags = {
+#    cluster = var.cluster_name
+#  }
 #-------------------------------------
 # Access for current IAM user
 #-------------------------------------
