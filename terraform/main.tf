@@ -91,7 +91,7 @@ module "vpc" {
 # -------------------------
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "21.3.1"
+  version = "21.3.0"
 
   name                            = module.label.id
   kubernetes_version              = var.kubernetes_version
@@ -100,7 +100,7 @@ module "eks" {
   enable_irsa                     = true
   endpoint_public_access  = false
   endpoint_private_access = true
-
+  node_groups = {}
   tags = {
     cluster = var.cluster_name
   }
@@ -127,20 +127,22 @@ module "eks" {
 # -------------------------
 # Karpenter configuration
 # -------------------------
-karpenter = {
-  enable_karpenter = true
-   # Example provisioner for spot + on-demand
-  provisioners = [
-    {
-      name           = "default"
-      capacity_types = ["spot", "on-demand"]
-      subnet_ids     = module.vpc.private_subnets
-      tags = {
-        "kubernetes.io/cluster/${var.cluster_name}" = "owned"
-      }
-    }
-  ]
+module "karpenter" {
+  source  = "aws-ia/karpenter/aws"
+  version = "2.8.0"
+
+  cluster_name = module.eks.cluster_name
+  cluster_endpoint = module.eks.cluster_endpoint
+  cluster_certificate_authority_data = module.eks.cluster_certificate_authority_data
+  subnets = module.vpc.private_subnets
+  service_account_name = "karpenter"
+  service_account_namespace = "karpenter"
+
+  tags = {
+    "kubernetes.io/cluster/${var.cluster_name}" = "owned"
+  }
 }
+
 # -------------------------
 # Karpenter Submodule
 # -------------------------
