@@ -130,15 +130,7 @@ module "eks" {
 module "eks_karpenter" {
   source  = "terraform-aws-modules/eks/aws//modules/karpenter"
   version = "21.3.1"
-
-  cluster_name                      = module.eks.cluster_id
-  cluster_endpoint                  = module.eks.cluster_endpoint
-  cluster_certificate_authority_data = module.eks.cluster_certificate_authority_data
-  subnets                           = module.vpc.private_subnets
-  service_account_role_name          = "karpenter"
-
-  # Spot + On-Demand
-  default_capacity_type = ["spot","on-demand"]
+  cluster_name             = module.eks.cluster_id
 
   tags = {
     "kubernetes.io/cluster/${module.label.id}" = "owned"
