@@ -23,7 +23,7 @@ jobs:
           
       - name: Terraform Init
         working-directory: ./terraform
-        run: terraform init -upgrade -input=false
+        run: terraform init -input=false
 
       - name: Terraform Plan
         working-directory: ./terraform
