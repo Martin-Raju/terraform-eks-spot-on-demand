@@ -2,6 +2,18 @@ provider "aws" {
   region = var.aws_region
 }
 
+provider "helm" {
+  kubernetes {
+    host                   = module.eks.cluster_endpoint
+    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+    token                  = data.aws_eks_cluster_auth.cluster.token
+  }
+}
+
+
+data "aws_eks_cluster_auth" "cluster" {
+  name = module.eks.cluster_name
+}
 data "aws_availability_zones" "available" {}
 data "aws_caller_identity" "current" {}
 locals {
@@ -106,17 +118,58 @@ module "karpenter_irsa" {
   }
 }
 
-# ------------------------------------------------------------------
-# Karpenter Helm Chart
-# ------------------------------------------------------------------
+# -------------------------
+# Karpenter Node IAM Role 
+# -------------------------
+resource "aws_iam_role" "karpenter_node_role" {
+  name = "${module.label.id}-karpenter-node"
 
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "ec2.amazonaws.com" }
+      Action    = "sts:AssumeRole"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "eks_worker" {
+  role       = aws_iam_role.karpenter_node_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
+}
+
+resource "aws_iam_role_policy_attachment" "cni" {
+  role       = aws_iam_role.karpenter_node_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
+}
+
+resource "aws_iam_role_policy_attachment" "ecr_read" {
+  role       = aws_iam_role.karpenter_node_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+}
+
+resource "aws_iam_role_policy_attachment" "ssm" {
+  role       = aws_iam_role.karpenter_node_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+# -------------------------
+# ECR Public Auth (for Helm OCI charts)
+# -------------------------
+data "aws_ecrpublic_authorization_token" "token" {}
+
+# -------------------------
+# Karpenter Helm Release
+# -------------------------
 resource "helm_release" "karpenter" {
-  name             = "karpenter"
+  name             = "${module.label.id}-karpenter"
+  repository       = "oci://public.ecr.aws/karpenter/karpenter"
+  chart            = "karpenter"
+  version          = "v1.6.3"  # latest available
   namespace        = "karpenter"
   create_namespace = true
-  chart            = "karpenter"
-  version          = "v1.7.1"
-  repository       = "oci://public.ecr.aws/karpenter/karpenter"
+
   repository_username = data.aws_ecrpublic_authorization_token.token.user_name
   repository_password = data.aws_ecrpublic_authorization_token.token.password
 
@@ -132,88 +185,9 @@ resource "helm_release" "karpenter" {
 
   set {
     name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
-    value = module.karpenter.irsa_arn
+    value = module.karpenter_irsa.iam_role_arn
   }
 }
-
-
-# ------------------------------------------------------------------
-# Karpenter Node IAM Role
-# ------------------------------------------------------------------
-
-# module "karpenter_node_role" {
-  # source  = "terraform-aws-modules/iam/aws//modules/iam-role"
-  # version = "5.46.0"
-
-  # name = "${module.label.id}-karpenter-node"
-  # assume_role_policy_statements = [
-    # {
-      # actions = ["sts:AssumeRole"]
-      # principals = [
-        # {
-          # type        = "Service"
-          # identifiers = ["ec2.amazonaws.com"]
-        # }
-      # ]
-    # }
-  # ]
-
-  # policy_arns = [
-    # "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy",
-    # "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy",
-    # "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly",
-    # "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-  # ]
-# }
-
-
-
-
-# # -------------------------
-# # EKS Cluster Module
-# # -------------------------
-# module "eks" {
-# source  = "terraform-aws-modules/eks/aws"
-# version = "21.3.1"
-
-# name                            = module.label.id
-# kubernetes_version              = var.kubernetes_version
-# subnet_ids                      = module.vpc.private_subnets
-# vpc_id                          = module.vpc.vpc_id
-# enable_irsa                     = true
-# endpoint_public_access  = false
-# endpoint_private_access = true
-# #  tags = {
-# #    cluster = var.cluster_name
-# #  }
-# #-------------------------------------
-# # Access for current IAM user
-# #-------------------------------------
-# access_entries = {
-# user_access = {
-# principal_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/${local.iam_username}"
-
-# policy_associations = {
-# admin = {
-# policy_arn   = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSAdminPolicy"
-# access_scope = { type = "cluster" }
-# }
-# cluster_admin = {
-# policy_arn   = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
-# access_scope = { type = "cluster" }
-# }
-# }
-# }
-# }
-# }
-
-# # -------------------------
-# # Karpenter Submodule
-# # -------------------------
-# module "eks_karpenter" {
-# source  = "terraform-aws-modules/eks/aws//modules/karpenter"
-# version = "21.3.1"
-# cluster_name             = module.eks.cluster_id
 
 # tags = {
 # "kubernetes.io/cluster/${module.label.id}" = "owned"
