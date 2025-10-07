@@ -20,7 +20,11 @@ jobs:
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.6.0
-
+          
+      - name: Clean Terraform cache
+        run: |
+          rm -rf .terraform .terraform.lock.hcl
+      
       - name: Terraform Init
         working-directory: ./terraform
         run: terraform init -input=false
