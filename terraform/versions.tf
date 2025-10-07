@@ -11,7 +11,7 @@ terraform {
       version = ">=2.7.1"
     }
     aws = {
-      source  = "hashicorp/aws"
+      source = "hashicorp/aws"
       #version = "5.100.0"
       version = "~> 6.13"
     }
@@ -26,6 +26,10 @@ terraform {
     cloudinit = {
       source  = "hashicorp/cloudinit"
       version = "~> 2.2.0"
+    }
+    helm = {
+      source  = "hashicorp/helm"
+      version = "~> 2.0"
     }
   }
 }
