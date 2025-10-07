@@ -111,34 +111,31 @@ module "karpenter_irsa" {
 # ------------------------------------------------------------------
 
 resource "helm_release" "karpenter" {
-  name       = "${module.label.id}-karpenter"
-  repository = "oci://public.ecr.aws/karpenter/karpenter"
-  chart      = "karpenter"
-  version    = "v1.7.0"
-
+  name             = "karpenter"
   namespace        = "karpenter"
   create_namespace = true
+  chart            = "karpenter"
+  version          = "v1.7.1"
+  repository       = "oci://public.ecr.aws/karpenter/karpenter"
+  repository_username = data.aws_ecrpublic_authorization_token.token.user_name
+  repository_password = data.aws_ecrpublic_authorization_token.token.password
 
   set {
-    name  = "settings.clusterName"
+    name  = "settings.aws.clusterName"
     value = module.eks.cluster_name
   }
 
   set {
-    name  = "settings.clusterEndpoint"
+    name  = "settings.aws.clusterEndpoint"
     value = module.eks.cluster_endpoint
   }
 
   set {
     name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
-    value = module.karpenter_irsa.iam_role_arn
-  }
-
-  set {
-    name  = "settings.interruptionQueue"
-    value = module.eks.cluster_name
+    value = module.karpenter.irsa_arn
   }
 }
+
 
 # ------------------------------------------------------------------
 # Karpenter Node IAM Role
