@@ -73,7 +73,7 @@ module "eks" {
       from_port   = 443
       to_port     = 443
       type        = "ingress"
-      cidr_blocks = [module.vpc.cidr] 
+      cidr_blocks = var.vpc_cidr 
     }
   }
   access_entries = {
