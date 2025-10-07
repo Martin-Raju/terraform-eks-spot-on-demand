@@ -1,2 +1,0 @@
-#!/bin/bash
-echo "I'm a shell script!"
