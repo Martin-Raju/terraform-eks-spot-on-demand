@@ -211,5 +211,7 @@ resource "helm_release" "karpenter" {
     name  = "settings.aws.defaultInstanceProfile"
     value = aws_iam_role.karpenter_node_role.name
   }
+  timeout = 600
+  wait    = true
 }
 
