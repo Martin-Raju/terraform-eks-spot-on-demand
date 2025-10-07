@@ -66,7 +66,16 @@ module "eks" {
   tags = {
     cluster = var.cluster_name
   }
-
+  cluster_security_group_additional_rules = {
+    ingress_api_access = {
+      description = "Allow EKS API access from Terraform runner/CI"
+      protocol    = "tcp"
+      from_port   = 443
+      to_port     = 443
+      type        = "ingress"
+      cidr_blocks = var.worker_mgmt_ingress_cidrs 
+    }
+  }
   access_entries = {
     user_access = {
       principal_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/${local.iam_username}"
