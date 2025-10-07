@@ -178,7 +178,7 @@ resource "helm_release" "karpenter" {
   repository       = "oci://public.ecr.aws/karpenter"
   #chart            = "./modules/karpenter-provider-aws-1.7.1"
   chart            = "karpenter"
-  version          = "v0.36.1"
+  version          = "0.36.1"
   namespace        = "karpenter"
   create_namespace = true
 
