@@ -175,8 +175,9 @@ resource "aws_iam_role_policy_attachment" "ssm" {
 # -------------------------
 resource "helm_release" "karpenter" {
   name = "${module.label.id}-karpenter"
-  # repository       = "oci://public.ecr.aws/karpenter/karpenter"
-  chart            = "./modules/karpenter-provider-aws-1.7.1"
+  repository       = "oci://public.ecr.aws/karpenter/karpenter"
+  #chart            = "./modules/karpenter-provider-aws-1.7.1"
+  chart            = "karpenter"
   version          = "1.7.1"
   namespace        = "karpenter"
   create_namespace = true
