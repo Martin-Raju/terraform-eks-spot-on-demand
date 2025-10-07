@@ -166,12 +166,9 @@ resource "helm_release" "karpenter" {
   name             = "${module.label.id}-karpenter"
   repository       = "oci://public.ecr.aws/karpenter/karpenter"
   chart            = "karpenter"
-  version          = "v1.6.3"  # latest available
+  version          = "v1.6.3"
   namespace        = "karpenter"
   create_namespace = true
-
-  repository_username = data.aws_ecrpublic_authorization_token.token.user_name
-  repository_password = data.aws_ecrpublic_authorization_token.token.password
 
   set {
     name  = "settings.aws.clusterName"
@@ -188,6 +185,7 @@ resource "helm_release" "karpenter" {
     value = module.karpenter_irsa.iam_role_arn
   }
 }
+
 
 # tags = {
 # "kubernetes.io/cluster/${module.label.id}" = "owned"
