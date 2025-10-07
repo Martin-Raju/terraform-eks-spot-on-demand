@@ -168,7 +168,7 @@ resource "aws_iam_role_policy_attachment" "ssm" {
 # -------------------------
 # ECR Public Auth (for Helm OCI charts)
 # -------------------------
-data "aws_ecrpublic_authorization_token" "token" {}
+#data "aws_ecrpublic_authorization_token" "token" {}
 
 # -------------------------
 # Karpenter Helm Release
