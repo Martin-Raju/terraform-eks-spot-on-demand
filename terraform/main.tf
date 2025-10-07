@@ -144,30 +144,30 @@ resource "helm_release" "karpenter" {
 # Karpenter Node IAM Role
 # ------------------------------------------------------------------
 
-module "karpenter_node_role" {
-  source  = "terraform-aws-modules/iam/aws//modules/iam-role"
-  version = "5.46.0"
+# module "karpenter_node_role" {
+  # source  = "terraform-aws-modules/iam/aws//modules/iam-role"
+  # version = "5.46.0"
 
-  name = "${module.label.id}-karpenter-node"
-  assume_role_policy_statements = [
-    {
-      actions = ["sts:AssumeRole"]
-      principals = [
-        {
-          type        = "Service"
-          identifiers = ["ec2.amazonaws.com"]
-        }
-      ]
-    }
-  ]
+  # name = "${module.label.id}-karpenter-node"
+  # assume_role_policy_statements = [
+    # {
+      # actions = ["sts:AssumeRole"]
+      # principals = [
+        # {
+          # type        = "Service"
+          # identifiers = ["ec2.amazonaws.com"]
+        # }
+      # ]
+    # }
+  # ]
 
-  policy_arns = [
-    "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy",
-    "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy",
-    "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly",
-    "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-  ]
-}
+  # policy_arns = [
+    # "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy",
+    # "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy",
+    # "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly",
+    # "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+  # ]
+# }
 
 
 
