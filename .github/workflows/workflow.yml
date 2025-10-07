@@ -21,6 +21,10 @@ jobs:
         with:
           terraform_version: 1.6.0
           
+      - name: Clear kubeconfig
+        run: |
+            rm -rf ~/.kube
+          
       - name: Terraform Init
         working-directory: ./terraform
         run: terraform init -input=false
