@@ -169,7 +169,10 @@ resource "aws_iam_role_policy_attachment" "ssm" {
 # Karpenter Helm Release
 # -------------------------
 resource "helm_release" "karpenter" {
-  depends_on = [module.eks, module.karpenter_irsa]
+    depends_on = [
+    module.eks,
+    module.karpenter_irsa
+  ]
   name = "${module.label.id}-karpenter"
   repository       = "oci://public.ecr.aws/karpenter"
   #chart            = "./modules/karpenter-provider-aws-1.7.1"
