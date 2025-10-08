@@ -50,9 +50,9 @@ module "vpc" {
 }
 
 
-########################################
-# Bastion Host
-########################################
+#---------------
+# Bastion Host 
+#---------------
 
 data "aws_ami" "amazon_linux" {
   most_recent = true
@@ -64,42 +64,16 @@ data "aws_ami" "amazon_linux" {
   }
 }
 
-# # IAM Role for SSM access 
-# resource "aws_iam_role" "bastion_role" {
-# name = "${module.label.id}-bastion-role"
-
-# assume_role_policy = jsonencode({
-# Version = "2012-10-17"
-# Statement = [
-# {
-# Effect    = "Allow"
-# Principal = { Service = "ec2.amazonaws.com" }
-# Action    = "sts:AssumeRole"
-# }
-# ]
-# })
-# }
-
-# resource "aws_iam_role_policy_attachment" "ssm_attach" {
-# role       = aws_iam_role.bastion_role.name
-# policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-# }
-
-# resource "aws_iam_instance_profile" "bastion_profile" {
-# name = "${module.label.id}-bastion-profile"
-# role = aws_iam_role.bastion_role.name
-# }
-#-------------------------
+# -------------------------
 # Bastion Security Group
-#-------------------------
+# -------------------------
 resource "aws_security_group" "bastion_sg" {
   name        = "${module.label.id}-bastion-sg"
   description = "Security group for Bastion host"
   vpc_id      = module.vpc.vpc_id
 
-
   ingress {
-    description = "SSH Access"
+    description = "Allow SSH access from your IP"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
@@ -117,23 +91,23 @@ resource "aws_security_group" "bastion_sg" {
     Name = "${module.label.id}-bastion-sg"
   }
 }
-#---------------------------
-# Bastion Host EC2 Instance
-#--------------------------
 
+# -------------------------
+# Bastion Host EC2 Instance
+# -------------------------
 resource "aws_instance" "bastion" {
   ami                         = data.aws_ami.amazon_linux.id
   instance_type               = "t3.micro"
   subnet_id                   = module.vpc.public_subnets[0]
   vpc_security_group_ids      = [aws_security_group.bastion_sg.id]
   key_name                    = var.ssh_key_name
-  iam_instance_profile        = aws_iam_instance_profile.bastion_profile.name
   associate_public_ip_address = true
 
   tags = {
     Name = "${module.label.id}-bastion"
   }
 }
+
 
 # -------------------------
 # EKS Cluster
