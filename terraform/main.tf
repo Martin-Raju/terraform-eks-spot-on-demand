@@ -70,7 +70,8 @@ module "vpc" {
 # -------------------------
 
 module "eks" {
-  source                          = "./modules/terraform-aws-eks-21.3.1"
+  #source                          = "./modules/terraform-aws-eks-21.3.1"
+  source                          = "./modules/eks
   cluster_name                    = "${module.label.environment}-EKS-cluster"
   cluster_version                 = var.kubernetes_version
   subnet_ids                      = module.vpc.private_subnets
