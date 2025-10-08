@@ -77,7 +77,26 @@ module "bastion_ec2" {
   subnet_id                   = module.vpc.public_subnets[0]
   vpc_security_group_ids      = [module.bastion_sg.security_group_id]
   associate_public_ip_address = true
+  iam_instance_profile       = aws_iam_instance_profile.bastion_profile.name
 
+  user_data = <<-EOF
+    #!/bin/bash
+    # Update system
+    yum update -y
+    yum install -y curl unzip
+
+    # Install AWS CLI v2
+    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+    unzip awscliv2.zip
+    sudo ./aws/install
+    aws --version
+
+    # Install kubectl latest stable
+    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+    chmod +x kubectl
+    sudo mv kubectl /usr/local/bin/
+    kubectl version --client
+  EOF
   tags = {
     Name = "${var.environment}-bastion"
   }
