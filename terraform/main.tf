@@ -64,33 +64,34 @@ data "aws_ami" "amazon_linux" {
   }
 }
 
-# IAM Role for SSM access (recommended)
-resource "aws_iam_role" "bastion_role" {
-  name = "${module.label.id}-bastion-role"
+# # IAM Role for SSM access 
+# resource "aws_iam_role" "bastion_role" {
+  # name = "${module.label.id}-bastion-role"
 
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect    = "Allow"
-        Principal = { Service = "ec2.amazonaws.com" }
-        Action    = "sts:AssumeRole"
-      }
-    ]
-  })
-}
+  # assume_role_policy = jsonencode({
+    # Version = "2012-10-17"
+    # Statement = [
+      # {
+        # Effect    = "Allow"
+        # Principal = { Service = "ec2.amazonaws.com" }
+        # Action    = "sts:AssumeRole"
+      # }
+    # ]
+  # })
+# }
 
-resource "aws_iam_role_policy_attachment" "ssm_attach" {
-  role       = aws_iam_role.bastion_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-}
+# resource "aws_iam_role_policy_attachment" "ssm_attach" {
+  # role       = aws_iam_role.bastion_role.name
+  # policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+# }
 
-resource "aws_iam_instance_profile" "bastion_profile" {
-  name = "${module.label.id}-bastion-profile"
-  role = aws_iam_role.bastion_role.name
-}
-
+# resource "aws_iam_instance_profile" "bastion_profile" {
+  # name = "${module.label.id}-bastion-profile"
+  # role = aws_iam_role.bastion_role.name
+# }
+#-------------------------
 # Bastion Security Group
+#-------------------------
 resource "aws_security_group" "bastion_sg" {
   name        = "${module.label.id}-bastion-sg"
   description = "Security group for Bastion host"
@@ -102,7 +103,7 @@ resource "aws_security_group" "bastion_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = var.vpc_cidr
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
@@ -116,8 +117,10 @@ resource "aws_security_group" "bastion_sg" {
     Name = "${module.label.id}-bastion-sg"
   }
 }
-
+#---------------------------
 # Bastion Host EC2 Instance
+#--------------------------
+
 resource "aws_instance" "bastion" {
   ami                         = data.aws_ami.amazon_linux.id
   instance_type               = "t3.micro"
@@ -133,7 +136,7 @@ resource "aws_instance" "bastion" {
 }
 
 # -------------------------
-# EKS Cluster Module
+# EKS Cluster
 # -------------------------
 
 module "eks" {

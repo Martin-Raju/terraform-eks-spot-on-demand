@@ -33,3 +33,8 @@ variable "public_subnets" {
   description = "List of public subnet CIDR blocks"
   type        = list(string)
 }
+
+variable "ssh_key_name" {
+  description = "EC2 Key pair name for SSH access"
+  type        = string
+}
