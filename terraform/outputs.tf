@@ -39,3 +39,7 @@ output "account_id" {
 output "iam_username" {
   value = local.iam_username
 }
+output "bastion_public_ip" {
+  value = aws_instance.bastion.public_ip
+  description = "Public IP of the Bastion Host"
+}
