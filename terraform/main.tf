@@ -77,7 +77,6 @@ module "bastion_ec2" {
   subnet_id                   = module.vpc.public_subnets[0]
   vpc_security_group_ids      = [module.bastion_sg.security_group_id]
   associate_public_ip_address = true
-  iam_instance_profile       = aws_iam_instance_profile.bastion_profile.name
 
   user_data = <<-EOF
     #!/bin/bash
