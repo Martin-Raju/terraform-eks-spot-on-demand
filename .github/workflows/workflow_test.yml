@@ -20,7 +20,12 @@ jobs:
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.6.0
-          
+      - name: Reset kubeconfig environment
+        run: |
+           unset KUBECONFIG
+           mkdir -p ~/.kube
+           rm -f ~/.kube/config
+           echo "✅ KUBECONFIG variable and file cleared"    
       - name: Terraform Init
         working-directory: ./terraform
         run: terraform init -input=false
