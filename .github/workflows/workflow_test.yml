@@ -20,7 +20,7 @@ jobs:
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.6.0
-          
+ 
       - name: Terraform Init
         working-directory: ./terraform
         run: terraform init -input=false
@@ -31,5 +31,5 @@ jobs:
 
       - name: Terraform Apply
         working-directory: ./terraform
-        #run: terraform apply -input=false -auto-approve tfplan
-        run: terraform destroy -auto-approve
+        run: terraform apply -input=false -auto-approve tfplan
+        #run: terraform destroy -auto-approve
