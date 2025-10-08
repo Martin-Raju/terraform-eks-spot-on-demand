@@ -66,28 +66,28 @@ data "aws_ami" "amazon_linux" {
 
 # # IAM Role for SSM access 
 # resource "aws_iam_role" "bastion_role" {
-  # name = "${module.label.id}-bastion-role"
+# name = "${module.label.id}-bastion-role"
 
-  # assume_role_policy = jsonencode({
-    # Version = "2012-10-17"
-    # Statement = [
-      # {
-        # Effect    = "Allow"
-        # Principal = { Service = "ec2.amazonaws.com" }
-        # Action    = "sts:AssumeRole"
-      # }
-    # ]
-  # })
+# assume_role_policy = jsonencode({
+# Version = "2012-10-17"
+# Statement = [
+# {
+# Effect    = "Allow"
+# Principal = { Service = "ec2.amazonaws.com" }
+# Action    = "sts:AssumeRole"
+# }
+# ]
+# })
 # }
 
 # resource "aws_iam_role_policy_attachment" "ssm_attach" {
-  # role       = aws_iam_role.bastion_role.name
-  # policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+# role       = aws_iam_role.bastion_role.name
+# policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 # }
 
 # resource "aws_iam_instance_profile" "bastion_profile" {
-  # name = "${module.label.id}-bastion-profile"
-  # role = aws_iam_role.bastion_role.name
+# name = "${module.label.id}-bastion-profile"
+# role = aws_iam_role.bastion_role.name
 # }
 #-------------------------
 # Bastion Security Group
@@ -97,7 +97,7 @@ resource "aws_security_group" "bastion_sg" {
   description = "Security group for Bastion host"
   vpc_id      = module.vpc.vpc_id
 
-  
+
   ingress {
     description = "SSH Access"
     from_port   = 22
