@@ -49,105 +49,6 @@ module "vpc" {
   }
 }
 
-
-#---------------
-# Bastion Host 
-#---------------
-
-data "aws_ami" "amazon_linux" {
-  most_recent = true
-  owners      = ["amazon"]
-
-  filter {
-    name   = "name"
-    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
-  }
-}
-# -------------------------
-# Bastion Host EC2 Instance
-# -------------------------
-module "bastion_ec2" {
-  source  = "terraform-aws-modules/ec2-instance/aws"
-  version = "~> 4.0"
-
-  name                        = "${var.environment}-bastion"
-  ami                         = data.aws_ami.amazon_linux.id
-  instance_type               = "t3.micro"
-  key_name                    = var.ssh_key_name
-  subnet_id                   = module.vpc.public_subnets[0]
-  vpc_security_group_ids      = [module.bastion_sg.security_group_id]
-  associate_public_ip_address = true
-
-  user_data = <<-EOF
-    #!/bin/bash
-    # Update system
-    yum update -y
-    yum install -y curl unzip
-
-    # Install AWS CLI v2
-    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-    unzip awscliv2.zip
-    sudo ./aws/install
-    aws --version
-
-    # Install kubectl latest stable
-    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-    chmod +x kubectl
-    sudo mv kubectl /usr/local/bin/
-    kubectl version --client
-  EOF
-  tags = {
-    Name = "${var.environment}-bastion"
-  }
-}
-
-# -------------------------
-# Bastion Security Group
-# -------------------------
-
-module "bastion_sg" {
-  source  = "terraform-aws-modules/security-group/aws"
-  version = "~> 5.0"
-
-  name        = "${var.environment}-bastion-sg"
-  description = "Security group for Bastion host"
-  vpc_id      = module.vpc.vpc_id
-
-  ingress_with_cidr_blocks = [
-    {
-      from_port   = 22
-      to_port     = 22
-      protocol    = "tcp"
-      cidr_blocks = "0.0.0.0/0"
-      description = "SSH access"
-    }
-  ]
-  ingress_with_source_security_group_id = [
-    {
-      from_port         = 443
-      to_port           = 443
-      protocol          = "tcp"
-      source_security_group_id = module.eks.cluster_security_group_id
-      description       = "Allow EKS API access"
-    }
-  ]
-
-  egress_with_cidr_blocks = [
-    {
-      from_port   = 0
-      to_port     = 0
-      protocol    = "-1"
-      cidr_blocks = "0.0.0.0/0"
-      description = "Allow all outbound"
-    }
-  ]
-
-  tags = {
-    Name = "${var.environment}-bastion-sg"
-  }
-}
-
-
 # -------------------------
 # EKS Cluster
 # -------------------------
@@ -182,4 +83,98 @@ module "eks" {
       }
     }
   }
+}
+
+# -------------------------
+# Bastion Security Group
+# -------------------------
+module "bastion_sg" {
+  source  = "terraform-aws-modules/security-group/aws"
+  version = "~> 5.0"
+
+  name        = "${var.environment}-bastion-sg"
+  description = "Security group for Bastion host"
+  vpc_id      = module.vpc.vpc_id
+
+  # SSH from your IP
+  ingress_with_cidr_blocks = [
+    {
+      from_port   = 22
+      to_port     = 22
+      protocol    = "tcp"
+      cidr_blocks = "0.0.0.0/0"
+      description = "SSH access"
+    }
+  ]
+
+  # Outbound to reach private EKS API
+  egress_with_cidr_blocks = [
+    {
+      from_port   = 443
+      to_port     = 443
+      protocol    = "tcp"
+      cidr_blocks = module.vpc.private_subnets_cidr_blocks
+      description = "HTTPS to private EKS"
+    },
+    {
+      from_port   = 0
+      to_port     = 0
+      protocol    = "-1"
+      cidr_blocks = "0.0.0.0/0"
+      description = "Allow all outbound"
+    }
+  ]
+
+  tags = {
+    Name = "${var.environment}-bastion-sg"
+  }
+}
+
+# -------------------------
+# Bastion EC2 Module
+# -------------------------
+module "bastion_ec2" {
+  source  = "terraform-aws-modules/ec2-instance/aws"
+  version = "~> 4.0"
+
+  name                        = "${var.environment}-bastion"
+  ami                         = data.aws_ami.amazon_linux.id
+  instance_type               = "t3.micro"
+  key_name                    = var.ssh_key_name
+  subnet_id                   = module.vpc.public_subnets[0]
+  vpc_security_group_ids      = [module.bastion_sg.security_group_id]
+  associate_public_ip_address = true
+
+  user_data = <<-EOF
+    #!/bin/bash
+    yum update -y
+    yum install -y curl unzip
+
+    # AWS CLI v2
+    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+    unzip awscliv2.zip
+    sudo ./aws/install
+
+    # kubectl latest
+    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+    chmod +x kubectl
+    sudo mv kubectl /usr/local/bin/
+  EOF
+
+  tags = {
+    Name = "${var.environment}-bastion"
+  }
+}
+
+# -------------------------
+# EKS SG rule to allow Bastion access
+# -------------------------
+resource "aws_security_group_rule" "allow_bastion_to_eks" {
+  type                     = "ingress"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  security_group_id        = module.eks.cluster_security_group_id
+  source_security_group_id = module.bastion_sg.security_group_id
+  description              = "Allow Bastion access to private EKS API"
 }
