@@ -64,7 +64,7 @@ module "vpc" {
 
 module "eks" {
   source                          = "./modules/eks"
-  cluster_name                    = ${module.label.environment}-EKS-cluster
+  cluster_name                    = "${module.label.environment}-EKS-cluster"
   cluster_version                 = var.kubernetes_version
   subnet_ids                      = module.vpc.private_subnets
   vpc_id                          = module.vpc.vpc_id
