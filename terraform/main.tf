@@ -124,11 +124,11 @@ module "bastion_sg" {
   ]
   ingress_with_source_security_group_id = [
     {
-      from_port       = 443
-      to_port         = 443
-      protocol        = "tcp"
-      security_groups = module.eks.cluster_security_group_id
-      description     = "Allow EKS API access"
+      from_port         = 443
+      to_port           = 443
+      protocol          = "tcp"
+      security_group_id = module.eks.cluster_security_group_id
+      description       = "Allow EKS API access"
     }
   ]
 
