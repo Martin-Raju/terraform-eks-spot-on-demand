@@ -66,45 +66,60 @@ data "aws_ami" "amazon_linux" {
 # -------------------------
 # Bastion Host EC2 Instance
 # -------------------------
-resource "aws_instance" "bastion" {
-  ami                         = data.aws_ami.amazon_linux.id
-  instance_type               = "t3.micro"
-  subnet_id                   = module.vpc.public_subnets[0]
-  vpc_security_group_ids      = [aws_security_group.bastion_sg.id]
-  key_name                    = var.ssh_key_name
+module "bastion_ec2" {
+  source  = "terraform-aws-modules/ec2-instance/aws"
+  version = "~> 4.0"
+
+  name                     = "${var.environment}-bastion"
+  ami                      = data.aws_ami.amazon_linux.id
+  instance_type            = "t3.micro"
+  key_name                 = var.ssh_key_name
+  subnet_id                = module.vpc.public_subnets[0]
+  vpc_security_group_ids   = [module.bastion_sg.security_group_id]
   associate_public_ip_address = true
 
   tags = {
-    Name = "${module.label.id}-bastion"
+    Name = "${var.environment}-bastion"
   }
 }
+
 # -------------------------
 # Bastion Security Group
 # -------------------------
-resource "aws_security_group" "bastion_sg" {
-  name        = "${module.label.id}-bastion-sg"
+
+module "bastion_sg" {
+  source  = "terraform-aws-modules/security-group/aws"
+  version = "~> 5.0"
+
+  name        = "${var.environment}-bastion-sg"
   description = "Security group for Bastion host"
   vpc_id      = module.vpc.vpc_id
 
-  ingress {
-    description = "Allow SSH access from your IP"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  ingress_with_cidr_blocks = [
+    {
+      from_port   = 22
+      to_port     = 22
+      protocol    = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+      description = "SSH access"
+    }
+  ]
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  egress_with_cidr_blocks = [
+    {
+      from_port   = 0
+      to_port     = 0
+      protocol    = "-1"
+      cidr_blocks = ["0.0.0.0/0"]
+      description = "Allow all outbound"
+    }
+  ]
 
   tags = {
-    Name = "${module.label.id}-bastion-sg"
+    Name = "${var.environment}-bastion-sg"
   }
 }
+
 
 # -------------------------
 # EKS Cluster
