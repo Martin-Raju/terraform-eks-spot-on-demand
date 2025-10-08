@@ -31,5 +31,5 @@ jobs:
 
       - name: Terraform Apply
         working-directory: ./terraform
-        run: terraform apply -input=false -auto-approve tfplan
-        #run: terraform destroy -auto-approve
+        #run: terraform apply -input=false -auto-approve tfplan
+        run: terraform destroy -auto-approve
