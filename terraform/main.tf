@@ -2,11 +2,9 @@ provider "aws" {
   region = var.aws_region
 }
 
-provider "kubernetes" {
-  host                   = data.aws_eks_cluster.cluster.endpoint
-  cluster_ca_certificate = base64decode(data.aws_eks_cluster.cluster.certificate_authority[0].data)
-  token                  = data.aws_eks_cluster_auth.cluster.token
-}
+# -------------------------
+# Data Block
+# -------------------------
 
 data "aws_availability_zones" "available" {}
 
@@ -23,14 +21,6 @@ data "aws_ami" "amazon_linux" {
     name   = "name"
     values = ["amzn2-ami-hvm-*-x86_64-gp2"]
   }
-}
-
-data "aws_eks_cluster" "cluster" {
-  name = module.eks.cluster_name
-}
-
-data "aws_eks_cluster_auth" "cluster" {
-  name = module.eks.cluster_name
 }
 
 # -------------------------
@@ -204,24 +194,6 @@ resource "aws_security_group_rule" "allow_bastion_to_eks" {
   source_security_group_id = module.bastion_sg.security_group_id
   description              = "Allow Bastion access to private EKS API"
 }
-#-------------------------------------
-#aws_auth
-#------------------------------------
-resource "kubernetes_config_map" "aws_auth" {
-  metadata {
-    name      = "aws-auth"
-    namespace = "kube-system"
-  }
 
-  data = {
-    mapUsers = yamlencode([
-      {
-        userarn  = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/${local.iam_username}"
-        username = local.iam_username
-        groups   = ["system:masters"]
-      }
-    ])
-  }
-}
 
 
