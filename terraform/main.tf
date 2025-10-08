@@ -63,7 +63,21 @@ data "aws_ami" "amazon_linux" {
     values = ["amzn2-ami-hvm-*-x86_64-gp2"]
   }
 }
+# -------------------------
+# Bastion Host EC2 Instance
+# -------------------------
+resource "aws_instance" "bastion" {
+  ami                         = data.aws_ami.amazon_linux.id
+  instance_type               = "t3.micro"
+  subnet_id                   = module.vpc.public_subnets[0]
+  vpc_security_group_ids      = [aws_security_group.bastion_sg.id]
+  key_name                    = var.ssh_key_name
+  associate_public_ip_address = true
 
+  tags = {
+    Name = "${module.label.id}-bastion"
+  }
+}
 # -------------------------
 # Bastion Security Group
 # -------------------------
@@ -91,23 +105,6 @@ resource "aws_security_group" "bastion_sg" {
     Name = "${module.label.id}-bastion-sg"
   }
 }
-
-# -------------------------
-# Bastion Host EC2 Instance
-# -------------------------
-resource "aws_instance" "bastion" {
-  ami                         = data.aws_ami.amazon_linux.id
-  instance_type               = "t3.micro"
-  subnet_id                   = module.vpc.public_subnets[0]
-  vpc_security_group_ids      = [aws_security_group.bastion_sg.id]
-  key_name                    = var.ssh_key_name
-  associate_public_ip_address = true
-
-  tags = {
-    Name = "${module.label.id}-bastion"
-  }
-}
-
 
 # -------------------------
 # EKS Cluster
