@@ -106,9 +106,10 @@ module "eks" {
 # Bastion Security Group
 # -------------------------
 module "bastion_sg" {
-  source  = "terraform-aws-modules/security-group/aws"
-  version = "~> 5.0"
-
+  
+  #source  = "terraform-aws-modules/security-group/aws"
+  #version = "~> 5.0"
+  source      = "./modules/terraform-aws-security-group-5.3.0"
   name        = "${module.label.environment}-bastion-sg"
   description = "Security group for Bastion host"
   vpc_id      = module.vpc.vpc_id
@@ -151,9 +152,9 @@ module "bastion_sg" {
 # Bastion EC2 Module
 # -------------------------
 module "bastion_ec2" {
-  source  = "terraform-aws-modules/ec2-instance/aws"
-  version = "~> 4.0"
-
+  #source  = "terraform-aws-modules/ec2-instance/aws"
+  #version = "~> 4.0"
+  source                      = "./modules/terraform-aws-ec2-instance-4.5.0"
   name                        = "${module.label.environment}-bastion"
   ami                         = data.aws_ami.amazon_linux.id
   instance_type               = "t3.micro"
