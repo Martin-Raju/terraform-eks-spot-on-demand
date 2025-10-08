@@ -122,6 +122,15 @@ module "bastion_sg" {
       description = "SSH access"
     }
   ]
+  ingress_with_source_security_group_id = [
+    {
+      from_port       = 443
+      to_port         = 443
+      protocol        = "tcp"
+      security_groups = module.eks.cluster_security_group_id
+      description     = "Allow EKS API access"
+    }
+  ]
 
   egress_with_cidr_blocks = [
     {
