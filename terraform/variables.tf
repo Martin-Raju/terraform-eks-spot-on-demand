@@ -38,3 +38,15 @@ variable "ssh_key_name" {
   description = "EC2 Key pair name for SSH access"
   type        = string
 }
+
+variable "eks_admin_user_arn" {
+  description = "IAM ARN of the user to be granted admin access to the EKS cluster"
+  type        = string
+}
+
+variable "eks_admin_username" {
+  description = "Username to assign in the EKS cluster for the IAM user"
+  type        = string
+  default     = "eks-admin"
+}
+

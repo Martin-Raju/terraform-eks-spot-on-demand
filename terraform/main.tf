@@ -187,3 +187,24 @@ resource "aws_security_group_rule" "allow_bastion_to_eks" {
   source_security_group_id = module.bastion_sg.security_group_id
   description              = "Allow Bastion access to private EKS API"
 }
+#-------------------------------------
+#aws_auth
+#------------------------------------
+resource "kubernetes_config_map" "aws_auth" {
+  metadata {
+    name      = "aws-auth"
+    namespace = "kube-system"
+  }
+
+  data = {
+    mapUsers = yamlencode([
+      {
+        userarn  = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/${local.iam_username}"
+        username = local.iam_username
+        groups   = ["system:masters"]
+      }
+    ])
+  }
+}
+
+
