@@ -122,7 +122,7 @@ module "bastion_sg" {
       from_port   = 443
       to_port     = 443
       protocol    = "tcp"
-      cidr_blocks = module.vpc.private_subnets_cidr_blocks
+      cidr_blocks = "0.0.0.0/0"
       description = "HTTPS to private EKS"
     },
     {
