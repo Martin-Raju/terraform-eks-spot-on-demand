@@ -72,7 +72,7 @@ resource "aws_iam_role" "bastion_role" {
     Version = "2012-10-17"
     Statement = [
       {
-        Effect = "Allow"
+        Effect    = "Allow"
         Principal = { Service = "ec2.amazonaws.com" }
         Action    = "sts:AssumeRole"
       }
@@ -96,13 +96,13 @@ resource "aws_security_group" "bastion_sg" {
   description = "Security group for Bastion host"
   vpc_id      = module.vpc.vpc_id
 
-  # SSH from your admin IP (replace 0.0.0.0/0 with your IP for security)
+  
   ingress {
     description = "SSH Access"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["YOUR_PUBLIC_IP/32"]  # Example: "203.0.113.10/32"
+    cidr_blocks = var.vpc_cidr
   }
 
   egress {
