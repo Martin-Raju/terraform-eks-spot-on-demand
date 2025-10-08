@@ -70,12 +70,12 @@ module "bastion_ec2" {
   source  = "terraform-aws-modules/ec2-instance/aws"
   version = "~> 4.0"
 
-  name                     = "${var.environment}-bastion"
-  ami                      = data.aws_ami.amazon_linux.id
-  instance_type            = "t3.micro"
-  key_name                 = var.ssh_key_name
-  subnet_id                = module.vpc.public_subnets[0]
-  vpc_security_group_ids   = [module.bastion_sg.security_group_id]
+  name                        = "${var.environment}-bastion"
+  ami                         = data.aws_ami.amazon_linux.id
+  instance_type               = "t3.micro"
+  key_name                    = var.ssh_key_name
+  subnet_id                   = module.vpc.public_subnets[0]
+  vpc_security_group_ids      = [module.bastion_sg.security_group_id]
   associate_public_ip_address = true
 
   tags = {
