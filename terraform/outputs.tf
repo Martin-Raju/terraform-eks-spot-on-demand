@@ -40,6 +40,7 @@ output "iam_username" {
   value = local.iam_username
 }
 output "bastion_public_ip" {
-  value       = aws_instance.bastion.public_ip
-  description = "Public IP of the Bastion Host"
+  description = "Public IP of the Bastion host"
+  value       = module.bastion_ec2.public_ip
 }
+
