@@ -6,6 +6,15 @@ data "aws_caller_identity" "current" {}
 locals {
   iam_username = split("/", data.aws_caller_identity.current.arn)[1]
 }
+data "aws_ami" "amazon_linux" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
+  }
+}
 
 # -------------------------
 # Label Module
@@ -55,7 +64,7 @@ module "vpc" {
 
 module "eks" {
   source                          = "./modules/eks"
-  cluster_name                    = module.label.id
+  cluster_name                    = ${module.label.environment}-EKS-cluster
   cluster_version                 = var.kubernetes_version
   subnet_ids                      = module.vpc.private_subnets
   vpc_id                          = module.vpc.vpc_id
@@ -92,7 +101,7 @@ module "bastion_sg" {
   source  = "terraform-aws-modules/security-group/aws"
   version = "~> 5.0"
 
-  name        = "${var.environment}-bastion-sg"
+  name        = "${module.label.environment}-bastion-sg"
   description = "Security group for Bastion host"
   vpc_id      = module.vpc.vpc_id
 
@@ -137,7 +146,7 @@ module "bastion_ec2" {
   source  = "terraform-aws-modules/ec2-instance/aws"
   version = "~> 4.0"
 
-  name                        = "${var.environment}-bastion"
+  name                        = "${module.label.environment}-bastion"
   ami                         = data.aws_ami.amazon_linux.id
   instance_type               = "t3.micro"
   key_name                    = var.ssh_key_name
