@@ -28,7 +28,8 @@ data "aws_ami" "amazon_linux" {
 # -------------------------
 
 module "label" {
-  source      = "./modules/terraform-null-label"
+  source  = "cloudposse/label/null"
+  version = "0.25.0"
   name        = var.cluster_name
   environment = var.environment
 }
@@ -36,14 +37,19 @@ module "label" {
 # -------------------------
 # VPC Module
 # -------------------------
+
 module "vpc" {
-  source               = "./modules/vpc"
-  name                 = "${module.label.environment}-vpc"
-  cidr                 = var.vpc_cidr
-  azs                  = data.aws_availability_zones.available.names
-  private_subnets      = var.private_subnets
-  public_subnets       = var.public_subnets
-  enable_nat_gateway   = true
+  source  = "terraform-aws-modules/vpc/aws"
+  version = "6.4.0"
+
+  name = "${module.label.environment}-vpc"
+  cidr = var.vpc_cidr
+
+  azs             = data.aws_availability_zones.available.names
+  private_subnets = var.private_subnets
+  public_subnets  = var.public_subnets
+
+  enable_nat_gateway = true
   single_nat_gateway   = true
   enable_dns_hostnames = true
   enable_dns_support   = true
@@ -65,20 +71,28 @@ module "vpc" {
   }
 }
 
+
 # -------------------------
 # EKS Cluster
 # -------------------------
 
 module "eks" {
-  #source                          = "./modules/terraform-aws-eks-21.3.1"
-  source                          = "./modules/eks"
-  cluster_name                    = "${module.label.environment}-EKS-cluster"
-  cluster_version                 = var.kubernetes_version
-  subnet_ids                      = module.vpc.private_subnets
-  vpc_id                          = module.vpc.vpc_id
-  enable_irsa                     = true
-  cluster_endpoint_public_access  = false
-  cluster_endpoint_private_access = true
+  source  = "terraform-aws-modules/eks/aws"
+  version = "21.3.2"
+
+  name               = "${module.label.environment}-EKS-cluster"
+  kubernetes_version = var.kubernetes_version
+  endpoint_public_access = false
+  endpoint_private_access = true
+  enable_cluster_creator_admin_permissions = true
+
+  compute_config = {
+    enabled    = true
+    node_pools = ["general-purpose"]
+  }
+
+  vpc_id     = module.vpc.vpc_id
+  subnet_ids = module.vpc.private_subnets
 
   tags = {
     cluster = var.cluster_name
@@ -100,7 +114,7 @@ module "eks" {
       }
     }
   }
-}
+} 
 
 # -------------------------
 # Bastion Security Group
@@ -151,10 +165,10 @@ module "bastion_sg" {
 # -------------------------
 # Bastion EC2 Module
 # -------------------------
+
 module "bastion_ec2" {
-  #source  = "terraform-aws-modules/ec2-instance/aws"
-  #version = "~> 4.0"
-  source                      = "./modules/terraform-aws-ec2-instance-4.5.0"
+  source                      = "terraform-aws-modules/ec2-instance/aws"
+  version                     = "6.1.1"
   name                        = "${module.label.environment}-bastion"
   ami                         = data.aws_ami.amazon_linux.id
   instance_type               = "t3.micro"
@@ -196,6 +210,3 @@ resource "aws_security_group_rule" "allow_bastion_to_eks" {
   source_security_group_id = module.bastion_sg.security_group_id
   description              = "Allow Bastion access to private EKS API"
 }
-
-
-
