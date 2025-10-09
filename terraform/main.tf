@@ -55,8 +55,7 @@ data "aws_ecrpublic_authorization_token" "token" {
 # -------------------------
 
 module "label" {
-  source = "./modules/terraform-null-label-0.25.0"
-  #version     = "0.25.0"
+  source      = "./modules/terraform-null-label-0.25.0"
   name        = var.cluster_name
   environment = var.environment
 }
@@ -67,7 +66,6 @@ module "label" {
 
 module "vpc" {
   source = "./modules/terraform-aws-vpc-6.4.0"
-  #  version = "6.4.0"
 
   name = "${module.label.environment}-vpc"
   cidr = var.vpc_cidr
@@ -103,9 +101,7 @@ module "vpc" {
 # -------------------------
 
 module "eks" {
-  source = "./modules/terraform-aws-eks-21.3.2"
-  #version = "21.3.2"
-
+  source                                   = "./modules/terraform-aws-eks-21.3.2"
   name                                     = "${module.label.environment}-EKS-cluster"
   kubernetes_version                       = var.kubernetes_version
   endpoint_public_access                   = false
@@ -124,14 +120,29 @@ module "eks" {
 
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnets
-  eks_managed_node_groups = {
-    karpenter = {
-      ami_type       = "AL2023_x86_64_STANDARD"
-      instance_types = ["m5.large"]
 
-      min_size     = 1
-      max_size     = 3
-      desired_size = 1
+  # Spot-only worker nodes
+
+  eks_managed_node_groups = {
+    spot_nodes = {
+      ami_type       = "AL2023_x86_64_STANDARD"
+      instance_types = ["t3.medium", "t3.large"]
+      capacity_type  = "SPOT"
+      min_size       = 1
+      max_size       = 5
+      desired_size   = 2
+
+      labels = {
+        "lifecycle" = "spot"
+      }
+
+      taints = [
+        {
+          key    = "lifecycle"
+          value  = "spot"
+          effect = "NoSchedule"
+        }
+      ]
     }
   }
 
@@ -155,37 +166,37 @@ module "karpenter" {
 }
 
 # -------------------------
-# Karpenter Helm
+# Karpenter Helm Release
 # -------------------------
 
-#resource "helm_release" "karpenter" {
-#  depends_on          = [module.eks, module.karpenter]
-#  namespace           = "kube-system"
-#  name                = "karpenter"
-#  repository          = "oci://public.ecr.aws/karpenter"
-#  repository_username = data.aws_ecrpublic_authorization_token.token.user_name
-#  repository_password = data.aws_ecrpublic_authorization_token.token.password
-#  chart               = "karpenter"
-#  version             = "1.4.1"
-#  wait                = false
+resource "helm_release" "karpenter" {
+  depends_on          = [module.eks, module.karpenter]
+  namespace           = "kube-system"
+  name                = "karpenter"
+  repository          = "oci://public.ecr.aws/karpenter"
+  repository_username = data.aws_ecrpublic_authorization_token.token.user_name
+  repository_password = data.aws_ecrpublic_authorization_token.token.password
+  chart               = "karpenter"
+  version             = "1.4.1"
+  wait                = true
 
-#  values = [
-#    <<-EOT
-#    serviceAccount:
-#      name: ${module.karpenter.service_account}
-#    settings:
-#      clusterName: ${module.eks.cluster_name}
-#      clusterEndpoint: ${module.eks.cluster_endpoint}
-#      interruptionQueue: ${module.karpenter.queue_name}
-#    EOT
-#  ]
-#}
+  values = [
+    <<-EOT
+    serviceAccount:
+      name: ${module.karpenter.service_account}
+    settings:
+      clusterName: ${module.eks.cluster_name}
+      clusterEndpoint: ${module.eks.cluster_endpoint}
+      interruptionQueue: ${module.karpenter.queue_name}
+    EOT
+  ]
+}
+
 
 # -------------------------
 # Bastion Security Group
 # -------------------------
 module "bastion_sg" {
-
   source      = "./modules/terraform-aws-security-group-5.3.0"
   name        = "${module.label.environment}-bastion-sg"
   description = "Security group for Bastion host"
@@ -230,8 +241,7 @@ module "bastion_sg" {
 # -------------------------
 
 module "bastion_ec2" {
-  source = "./modules/terraform-aws-ec2-instance-6.1.1"
-  # version                     = "6.1.1"
+  source                      = "./modules/terraform-aws-ec2-instance-6.1.1"
   name                        = "${module.label.environment}-bastion"
   ami                         = data.aws_ami.amazon_linux.id
   instance_type               = "t3.micro"
