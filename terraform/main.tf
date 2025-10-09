@@ -28,8 +28,8 @@ data "aws_ami" "amazon_linux" {
 # -------------------------
 
 module "label" {
-  source  = "cloudposse/label/null"
-  version = "0.25.0"
+  source      = "cloudposse/label/null"
+  version     = "0.25.0"
   name        = var.cluster_name
   environment = var.environment
 }
@@ -49,7 +49,7 @@ module "vpc" {
   private_subnets = var.private_subnets
   public_subnets  = var.public_subnets
 
-  enable_nat_gateway = true
+  enable_nat_gateway   = true
   single_nat_gateway   = true
   enable_dns_hostnames = true
   enable_dns_support   = true
@@ -80,10 +80,10 @@ module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "21.3.2"
 
-  name               = "${module.label.environment}-EKS-cluster"
-  kubernetes_version = var.kubernetes_version
-  endpoint_public_access = false
-  endpoint_private_access = true
+  name                                     = "${module.label.environment}-EKS-cluster"
+  kubernetes_version                       = var.kubernetes_version
+  endpoint_public_access                   = false
+  endpoint_private_access                  = true
   enable_cluster_creator_admin_permissions = true
 
   compute_config = {
@@ -114,13 +114,13 @@ module "eks" {
       }
     }
   }
-} 
+}
 
 # -------------------------
 # Bastion Security Group
 # -------------------------
 module "bastion_sg" {
-  
+
   #source  = "terraform-aws-modules/security-group/aws"
   #version = "~> 5.0"
   source      = "./modules/terraform-aws-security-group-5.3.0"
