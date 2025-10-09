@@ -1,7 +1,33 @@
+
+# -------------------------
+# Provider Block
+# -------------------------
+
 provider "aws" {
   region = var.aws_region
 }
 
+provider "kubernetes" {
+  host                   = module.eks.cluster_endpoint
+  cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+  exec {
+    api_version = "client.authentication.k8s.io/v1beta1"
+    command     = "aws"
+    args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name, "--region", var.aws_region]
+  }
+}
+
+provider "helm" {
+  kubernetes {
+    host                   = module.eks.cluster_endpoint
+    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+    exec {
+      api_version = "client.authentication.k8s.io/v1beta1"
+      command     = "aws"
+      args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name, "--region", var.aws_region]
+    }
+  }
+}
 # -------------------------
 # Data Block
 # -------------------------
@@ -63,11 +89,13 @@ module "vpc" {
   public_subnet_tags = {
     "kubernetes.io/cluster/${var.cluster_name}" = "shared"
     "kubernetes.io/role/elb"                    = "1"
+    "karpenter.sh/discovery" = "${module.label.environment}-EKS-cluster"
   }
 
   private_subnet_tags = {
     "kubernetes.io/cluster/${var.cluster_name}" = "shared"
     "kubernetes.io/role/internal-elb"           = "1"
+    "karpenter.sh/discovery" = "${module.label.environment}-EKS-cluster"
   }
 }
 
@@ -85,19 +113,84 @@ module "eks" {
   endpoint_public_access                   = false
   endpoint_private_access                  = true
   enable_cluster_creator_admin_permissions = true
-  create_auto_mode_iam_resources           = true
+  
+  create_auto_mode_iam_resources           = false
   compute_config = {
-    enabled    = true
-    node_pools = ["general-purpose"]
+    enabled    = false
   }
-
+  
+  karpenter_enabled = true
+  enable_pod_identity = true
+  
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnets
 
   tags = {
     cluster = var.cluster_name
+    "karpenter.sh/discovery" = "${module.label.environment}-EKS-cluster"
   }
 }
+
+# -------------------------
+# Karpenter Custom Resources
+# -------------------------
+
+# Define the EC2NodeClass, which specifies AWS-specific configurations for nodes
+resource "kubectl_manifest" "ec2_node_class_general_purpose" {
+  yaml_body = <<-YAML
+    apiVersion: karpenter.k8s.aws/v1beta1
+    kind: EC2NodeClass
+    metadata:
+      name: general-purpose
+      namespace: karpenter
+    spec:
+      amiFamily: AL2023
+      role: ${module.eks.karpenter_node_iam_role_name}
+      subnetSelectorTerms:
+        - tags:
+            karpenter.sh/discovery: "${module.label.environment}-EKS-cluster"
+      securityGroupSelectorTerms:
+        - tags:
+            karpenter.sh/discovery: "${module.label.environment}-EKS-cluster"
+  YAML
+  depends_on = [module.eks]
+}
+
+# Define the NodePool, which defines Karpenter's scheduling and provisioning logic
+resource "kubectl_manifest" "node_pool_general_purpose" {
+  yaml_body = <<-YAML
+    apiVersion: karpenter.sh/v1beta1
+    kind: NodePool
+    metadata:
+      name: general-purpose
+      namespace: karpenter
+    spec:
+      template:
+        spec:
+          nodeClassRef:
+            name: general-purpose
+          requirements:
+            - key: "kubernetes.io/arch"
+              operator: In
+              values: ["amd64"]
+            - key: "kubernetes.io/os"
+              operator: In
+              values: ["linux"]
+            - key: "karpenter.sh/capacity-type"
+              operator: In
+              values: ["on-demand", "spot"]
+            - key: "karpenter.k8s.aws/instance-family"
+              operator: In
+              values: ["t2", "t3"]
+      limits:
+        cpu: "1000"
+      disruption:
+        consolidationPolicy: WhenUnderutilized
+        consolidateAfter: 60s
+  YAML
+  depends_on = [kubectl_manifest.ec2_node_class_general_purpose]
+}
+
 
 # -------------------------
 # Bastion Security Group
