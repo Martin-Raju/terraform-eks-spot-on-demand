@@ -43,9 +43,7 @@ data "aws_ami" "amazon_linux" {
   }
 }
 
-data "aws_ecrpublic_authorization_token" "token" {
-  provider = var.aws_region
-}
+data "aws_ecrpublic_authorization_token" "token" {}
 
 # -------------------------
 # Label Module
