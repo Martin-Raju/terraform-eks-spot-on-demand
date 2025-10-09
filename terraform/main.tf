@@ -187,25 +187,21 @@ resource "helm_release" "karpenter" {
   version             = "1.0.0"
   wait                = true # Set to true to wait for readiness
 
-  set {
-    name  = "settings.aws.clusterName"
-    value = module.eks.cluster_name
-  }
-
-  set {
-    name  = "settings.aws.clusterEndpoint"
-    value = module.eks.cluster_endpoint
-  }
-
-  set {
-    name  = "settings.aws.interruptionQueue"
-    value = module.karpenter.queue_name
-  }
-
-  set {
-    name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
-    value = module.karpenter.irsa_arn
-  }
+  values = [
+    yamlencode({
+      serviceAccount = {
+        name = module.karpenter.service_account
+        annotations = {
+          "eks.amazonaws.com/role-arn" = module.karpenter.irsa_arn
+        }
+      }
+      settings = {
+        clusterName       = module.eks.cluster_name
+        clusterEndpoint   = module.eks.cluster_endpoint
+        interruptionQueue = module.karpenter.queue_name
+      }
+    })
+  ]
 }
 
 # -------------------------
