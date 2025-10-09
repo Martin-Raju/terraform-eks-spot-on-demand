@@ -97,23 +97,23 @@ module "eks" {
   tags = {
     cluster = var.cluster_name
   }
-  access_entries = {
-    user_access = {
-      principal_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/${local.iam_username}"
+  # access_entries = {
+  #   user_access = {
+  #     principal_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/${local.iam_username}"
 
-      policy_associations = {
-        admin = {
-          policy_arn   = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSAdminPolicy"
-          access_scope = { type = "cluster" }
-        }
+  #    policy_associations = {
+  #      admin = {
+  #        policy_arn   = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSAdminPolicy"
+  #        access_scope = { type = "cluster" }
+  #      }
 
-        cluster_admin = {
-          policy_arn   = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
-          access_scope = { type = "cluster" }
-        }
-      }
-    }
-  }
+  #      cluster_admin = {
+  #        policy_arn   = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+  #        access_scope = { type = "cluster" }
+  #      }
+  #    }
+  #  }
+  #}
 }
 
 # -------------------------
