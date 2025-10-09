@@ -103,7 +103,7 @@ module "vpc" {
 # -------------------------
 
 module "eks" {
-  source  = "./modules/terraform-aws-eks-21.3.2"
+  source = "./modules/terraform-aws-eks-21.3.2"
   #version = "21.3.2"
 
   name                                     = "${module.label.environment}-EKS-cluster"
