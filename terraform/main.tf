@@ -153,6 +153,7 @@ module "karpenter" {
 # -------------------------
 
 resource "helm_release" "karpenter" {
+  depends_on          = [module.eks, module.karpenter]
   namespace           = "kube-system"
   name                = "karpenter"
   repository          = "oci://public.ecr.aws/karpenter"
