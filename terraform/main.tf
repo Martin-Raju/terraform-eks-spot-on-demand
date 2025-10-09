@@ -1,6 +1,29 @@
+
+# -------------------------
+# Provider Block
+# -------------------------
+
 provider "aws" {
   region = var.aws_region
 }
+
+provider "aws" {
+  alias  = "virginia"
+  region = "us-east-1"
+}
+
+provider "kubernetes" {
+  host                   = module.eks.cluster_endpoint
+  cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+
+  exec {
+    api_version = "client.authentication.k8s.io/v1beta1"
+    command     = "aws"
+    args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
+  }
+}
+
+provider "helm" {}
 
 # -------------------------
 # Data Block
@@ -23,13 +46,17 @@ data "aws_ami" "amazon_linux" {
   }
 }
 
+data "aws_ecrpublic_authorization_token" "token" {
+  provider = aws.virginia
+}
+
 # -------------------------
 # Label Module
 # -------------------------
 
 module "label" {
-  source      = "cloudposse/label/null"
-  version     = "0.25.0"
+  source = "./modules/terraform-null-label-0.25.0"
+  #version     = "0.25.0"
   name        = var.cluster_name
   environment = var.environment
 }
@@ -39,8 +66,8 @@ module "label" {
 # -------------------------
 
 module "vpc" {
-  source  = "terraform-aws-modules/vpc/aws"
-  version = "6.4.0"
+  source = "./modules/terraform-aws-vpc-6.4.0"
+  #  version = "6.4.0"
 
   name = "${module.label.environment}-vpc"
   cidr = var.vpc_cidr
@@ -71,28 +98,42 @@ module "vpc" {
   }
 }
 
-
 # -------------------------
 # EKS Cluster
 # -------------------------
 
 module "eks" {
-  source  = "terraform-aws-modules/eks/aws"
-  version = "21.3.2"
+  source = "./modules/terraform-aws-eks-21.3.2"
+  #version = "21.3.2"
 
   name                                     = "${module.label.environment}-EKS-cluster"
   kubernetes_version                       = var.kubernetes_version
   endpoint_public_access                   = false
   endpoint_private_access                  = true
   enable_cluster_creator_admin_permissions = true
-  create_auto_mode_iam_resources           = true
-  compute_config = {
-    enabled    = true
-    node_pools = ["general-purpose"]
+  addons = {
+    coredns = {}
+    eks-pod-identity-agent = {
+      before_compute = true
+    }
+    kube-proxy = {}
+    vpc-cni = {
+      before_compute = true
+    }
   }
 
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnets
+  eks_managed_node_groups = {
+    karpenter = {
+      ami_type       = "AL2023_x86_64_STANDARD"
+      instance_types = ["m5.large"]
+
+      min_size     = 1
+      max_size     = 3
+      desired_size = 1
+    }
+  }
 
   tags = {
     cluster = var.cluster_name
@@ -100,12 +141,51 @@ module "eks" {
 }
 
 # -------------------------
+# Karpenter
+# -------------------------
+
+module "karpenter" {
+  source       = "./modules/terraform-aws-eks-21.3.2/modules/karpenter"
+  cluster_name = module.eks.cluster_name
+
+  # Attach additional IAM policies to the Karpenter node IAM role
+  node_iam_role_additional_policies = {
+    AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+  }
+}
+
+# -------------------------
+# Karpenter Helm
+# -------------------------
+
+#resource "helm_release" "karpenter" {
+#  depends_on          = [module.eks, module.karpenter]
+#  namespace           = "kube-system"
+#  name                = "karpenter"
+#  repository          = "oci://public.ecr.aws/karpenter"
+#  repository_username = data.aws_ecrpublic_authorization_token.token.user_name
+#  repository_password = data.aws_ecrpublic_authorization_token.token.password
+#  chart               = "karpenter"
+#  version             = "1.4.1"
+#  wait                = false
+
+#  values = [
+#    <<-EOT
+#    serviceAccount:
+#      name: ${module.karpenter.service_account}
+#    settings:
+#      clusterName: ${module.eks.cluster_name}
+#      clusterEndpoint: ${module.eks.cluster_endpoint}
+#      interruptionQueue: ${module.karpenter.queue_name}
+#    EOT
+#  ]
+#}
+
+# -------------------------
 # Bastion Security Group
 # -------------------------
 module "bastion_sg" {
 
-  #source  = "terraform-aws-modules/security-group/aws"
-  #version = "~> 5.0"
   source      = "./modules/terraform-aws-security-group-5.3.0"
   name        = "${module.label.environment}-bastion-sg"
   description = "Security group for Bastion host"
@@ -150,8 +230,8 @@ module "bastion_sg" {
 # -------------------------
 
 module "bastion_ec2" {
-  source                      = "terraform-aws-modules/ec2-instance/aws"
-  version                     = "6.1.1"
+  source = "./modules/terraform-aws-ec2-instance-6.1.1"
+  # version                     = "6.1.1"
   name                        = "${module.label.environment}-bastion"
   ami                         = data.aws_ami.amazon_linux.id
   instance_type               = "t3.micro"
