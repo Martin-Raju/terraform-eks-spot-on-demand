@@ -162,39 +162,27 @@ module "karpenter" {
 # Karpenter Helm
 # -------------------------
 
-# Install Karpenter CRDs separately. `depends_on` ensures it runs after the EKS cluster is ready.
-
-resource "helm_release" "karpenter_crd" {
-  depends_on       = [module.eks]
-  name             = "karpenter-crd"
-  repository       = "oci://public.ecr.aws/karpenter"
-  chart            = "karpenter-crd"
-  version          = "1.0.0"
-  namespace        = "karpenter"
-  create_namespace = true
-}
-
-# Install the main Karpenter chart. It depends on the CRDs being deployed first.
-
 resource "helm_release" "karpenter" {
-  depends_on          = [helm_release.karpenter_crd]
-  namespace           = "karpenter" # Using the dedicated karpenter namespace
+  depends_on          = [module.eks, module.karpenter]
+  namespace           = "kube-system"
   name                = "karpenter"
   repository          = "oci://public.ecr.aws/karpenter"
   repository_username = data.aws_ecrpublic_authorization_token.token.user_name
   repository_password = data.aws_ecrpublic_authorization_token.token.password
   chart               = "karpenter"
-  version             = "1.0.0"
-  wait                = true # Set to true to wait for readiness
+  version             = "1.4.1"
+  wait                = false
 
   values = [
     <<-EOT
+    serviceAccount:
+      name: ${module.karpenter.service_account}
     settings:
       clusterName: ${module.eks.cluster_name}
       clusterEndpoint: ${module.eks.cluster_endpoint}
       interruptionQueue: ${module.karpenter.queue_name}
     EOT
-   ]
+  ]
 }
 
 # -------------------------
