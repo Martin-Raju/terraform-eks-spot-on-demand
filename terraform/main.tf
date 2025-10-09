@@ -230,7 +230,7 @@ module "bastion_sg" {
 # -------------------------
 
 module "bastion_ec2" {
-  source = "./modulesterraform-aws-ec2-instance-6.1.1"
+  source = "./modules/terraform-aws-ec2-instance-6.1.1"
   # version                     = "6.1.1"
   name                        = "${module.label.environment}-bastion"
   ami                         = data.aws_ami.amazon_linux.id
