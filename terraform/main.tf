@@ -90,12 +90,12 @@ module "eks" {
   endpoint_private_access                  = true
   enable_cluster_creator_admin_permissions = true
   addons = {
-    coredns                = {}
+    coredns = {}
     eks-pod-identity-agent = {
       before_compute = true
     }
-    kube-proxy             = {}
-    vpc-cni                = {
+    kube-proxy = {}
+    vpc-cni = {
       before_compute = true
     }
   }
@@ -111,9 +111,10 @@ module "eks" {
       max_size     = 3
       desired_size = 1
     }
-  
+  }
+
   tags = {
-    cluster                  = var.cluster_name
+    cluster = var.cluster_name
   }
 }
 
