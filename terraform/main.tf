@@ -136,13 +136,13 @@ module "eks" {
         "lifecycle" = "spot"
       }
 
-      taints = [
-        {
+      taints = {
+        "lifecycle" = {
           key    = "lifecycle"
           value  = "spot"
           effect = "NoSchedule"
         }
-      ]
+      }
     }
   }
 
