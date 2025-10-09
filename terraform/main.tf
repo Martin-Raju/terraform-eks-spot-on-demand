@@ -189,16 +189,12 @@ resource "helm_release" "karpenter" {
 
   values = [
     <<-EOT
-  serviceAccount:
-    name: ${module.karpenter.service_account_name}
-    annotations:
-      "eks.amazonaws.com/role-arn": ${module.karpenter.service_account_iam_role_arn}
-  settings:
-    clusterName: ${module.eks.cluster_name}
-    clusterEndpoint: ${module.eks.cluster_endpoint}
-    interruptionQueue: ${module.karpenter.queue_name}
-  EOT
-  ]
+    settings:
+      clusterName: ${module.eks.cluster_name}
+      clusterEndpoint: ${module.eks.cluster_endpoint}
+      interruptionQueue: ${module.karpenter.queue_name}
+    EOT
+   ]
 }
 
 # -------------------------
