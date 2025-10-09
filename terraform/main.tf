@@ -7,6 +7,21 @@ provider "aws" {
   region = var.aws_region
 }
 
+provider "helm" {
+  kubernetes {
+    host                   = module.eks.cluster_endpoint
+    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+
+    exec {
+      api_version = "client.authentication.k8s.io/v1beta1"
+      command     = "aws"
+      # This requires the awscli to be installed locally where Terraform is executed
+      args = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
+    }
+  }
+}
+
+
 # -------------------------
 # Data Block
 # -------------------------
@@ -26,6 +41,10 @@ data "aws_ami" "amazon_linux" {
     name   = "name"
     values = ["amzn2-ami-hvm-*-x86_64-gp2"]
   }
+}
+
+data "aws_ecrpublic_authorization_token" "token" {
+  provider = var.aws_region
 }
 
 # -------------------------
@@ -118,6 +137,10 @@ module "eks" {
   }
 }
 
+# -------------------------
+# Karpenter
+# -------------------------
+
 module "karpenter" {
   source       = "terraform-aws-modules/eks/aws//modules/karpenter"
   cluster_name = module.eks.cluster_name
@@ -128,6 +151,31 @@ module "karpenter" {
   }
 }
 
+# -------------------------
+# Karpenter Helm
+# -------------------------
+
+resource "helm_release" "karpenter" {
+  namespace           = "kube-system"
+  name                = "karpenter"
+  repository          = "oci://public.ecr.aws/karpenter"
+  repository_username = data.aws_ecrpublic_authorization_token.token.user_name
+  repository_password = data.aws_ecrpublic_authorization_token.token.password
+  chart               = "karpenter"
+  version             = "1.0.0"
+  wait                = false
+
+  values = [
+    <<-EOT
+    serviceAccount:
+      name: ${module.karpenter.service_account}
+    settings:
+      clusterName: ${module.eks.cluster_name}
+      clusterEndpoint: ${module.eks.cluster_endpoint}
+      interruptionQueue: ${module.karpenter.queue_name}
+    EOT
+  ]
+}
 # -------------------------
 # Bastion Security Group
 # -------------------------
