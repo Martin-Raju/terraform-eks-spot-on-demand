@@ -140,7 +140,7 @@ module "eks" {
         "lifecycle" = {
           key    = "lifecycle"
           value  = "spot"
-          effect = "NoSchedule"
+          effect = "NO_SCHEDULE"
         }
       }
     }
