@@ -55,8 +55,8 @@ data "aws_ecrpublic_authorization_token" "token" {
 # -------------------------
 
 module "label" {
-  source      = "cloudposse/label/null"
-  version     = "0.25.0"
+  source = "./modules/terraform-null-label-0.25.0"
+  #version     = "0.25.0"
   name        = var.cluster_name
   environment = var.environment
 }
@@ -66,8 +66,8 @@ module "label" {
 # -------------------------
 
 module "vpc" {
-  source  = "terraform-aws-modules/vpc/aws"
-  version = "6.4.0"
+  source = "./modules/terraform-aws-vpc-6.4.0"
+  #  version = "6.4.0"
 
   name = "${module.label.environment}-vpc"
   cidr = var.vpc_cidr
@@ -103,7 +103,7 @@ module "vpc" {
 # -------------------------
 
 module "eks" {
-  source  = "terraform-aws-modules/eks/aws"
+  source  = "./modules/terraform-aws-eks-21.3.2"
   version = "21.3.2"
 
   name                                     = "${module.label.environment}-EKS-cluster"
@@ -145,7 +145,7 @@ module "eks" {
 # -------------------------
 
 module "karpenter" {
-  source       = "terraform-aws-modules/eks/aws//modules/karpenter"
+  source       = "./modules/terraform-aws-eks-21.3.2/modules/karpenter"
   cluster_name = module.eks.cluster_name
 
   # Attach additional IAM policies to the Karpenter node IAM role
@@ -153,10 +153,6 @@ module "karpenter" {
     AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
   }
 }
-
-# -------------------------
-# Karpenter Helm
-# -------------------------
 
 # -------------------------
 # Karpenter Helm
@@ -190,8 +186,6 @@ resource "helm_release" "karpenter" {
 # -------------------------
 module "bastion_sg" {
 
-  #source  = "terraform-aws-modules/security-group/aws"
-  #version = "~> 5.0"
   source      = "./modules/terraform-aws-security-group-5.3.0"
   name        = "${module.label.environment}-bastion-sg"
   description = "Security group for Bastion host"
@@ -236,8 +230,8 @@ module "bastion_sg" {
 # -------------------------
 
 module "bastion_ec2" {
-  source                      = "terraform-aws-modules/ec2-instance/aws"
-  version                     = "6.1.1"
+  source = "./modulesterraform-aws-ec2-instance-6.1.1"
+  # version                     = "6.1.1"
   name                        = "${module.label.environment}-bastion"
   ami                         = data.aws_ami.amazon_linux.id
   instance_type               = "t3.micro"
