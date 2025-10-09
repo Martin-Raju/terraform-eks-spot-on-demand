@@ -85,7 +85,7 @@ module "eks" {
   endpoint_public_access                   = false
   endpoint_private_access                  = true
   enable_cluster_creator_admin_permissions = true
-
+  create_auto_mode_iam_resources = true
   compute_config = {
     enabled    = true
     node_pools = ["general-purpose"]
