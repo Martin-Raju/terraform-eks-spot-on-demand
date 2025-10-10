@@ -13,6 +13,7 @@ provider "aws" {
 }
 
 provider "kubernetes" {
+  alias                  = "helm"
   host                   = module.eks.cluster_endpoint
   cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
 
@@ -244,6 +245,7 @@ module "karpenter" {
 # -------------------------
 
 resource "helm_release" "karpenter" {
+  provider            = kubernetes.helm
   depends_on          = [module.eks, module.karpenter]
   namespace           = "kube-system"
   name                = "karpenter"
