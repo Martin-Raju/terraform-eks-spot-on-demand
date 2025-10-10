@@ -110,13 +110,39 @@ module "eks" {
   endpoint_private_access                  = true
   enable_cluster_creator_admin_permissions = true
   addons = {
-    coredns = {}
+    coredns = {
+      tolerations = [
+        {
+          key      = "lifecycle"
+          operator = "Equal"
+          value    = "on-demand"
+          effect   = "NoSchedule"
+        }
+      ]
+    }
     eks-pod-identity-agent = {
       before_compute = true
     }
-    kube-proxy = {}
+    kube-proxy = {
+      tolerations = [
+        {
+          key      = "lifecycle"
+          operator = "Equal"
+          value    = "on-demand"
+          effect   = "NoSchedule"
+        }
+      ]
+    }
     vpc-cni = {
       before_compute = true
+      tolerations = [
+        {
+          key      = "lifecycle"
+          operator = "Equal"
+          value    = "on-demand"
+          effect   = "NoSchedule"
+        }
+      ]
     }
   }
 
