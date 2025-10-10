@@ -111,32 +111,32 @@ module "eks" {
   enable_cluster_creator_admin_permissions = true
   addons = {
     coredns = {
-      tolerations = [
+      #tolerations = [
         #{ key = "lifecycle", operator = "Equal", value = "on-demand", effect = "NoSchedule" },
-        { key = "lifecycle", operator = "Equal", value = "spot", effect = "NO_SCHEDULE" },
-        { key = "node-role.kubernetes.io/control-plane", effect = "NO_SCHEDULE" },
-        { key = "CriticalAddonsOnly", operator = "Exists" }
-      ]
+        #{ key = "lifecycle", operator = "Equal", value = "spot", effect = "NO_SCHEDULE" },
+        #{ key = "node-role.kubernetes.io/control-plane", effect = "NO_SCHEDULE" },
+        #{ key = "CriticalAddonsOnly", operator = "Exists" }
+      #]
     }
     eks-pod-identity-agent = {
       before_compute = true
     }
     kube-proxy = {
-      tolerations = [
+      #tolerations = [
         #{ key = "lifecycle", operator = "Equal", value = "on-demand", effect = "NoSchedule" },
-        { key = "lifecycle", operator = "Equal", value = "spot", effect = "NO_SCHEDULE" },
-        { key = "node-role.kubernetes.io/control-plane", effect = "NO_SCHEDULE" },
-        { key = "CriticalAddonsOnly", operator = "Exists" }
-      ]
+        #{ key = "lifecycle", operator = "Equal", value = "spot", effect = "NO_SCHEDULE" },
+        #{ key = "node-role.kubernetes.io/control-plane", effect = "NO_SCHEDULE" },
+        #{ key = "CriticalAddonsOnly", operator = "Exists" }
+      #]
     }
     vpc-cni = {
       before_compute = true
-      tolerations = [
+      #tolerations = [
         #{ key = "lifecycle", operator = "Equal", value = "on-demand", effect = "NoSchedule" },
-        { key = "lifecycle", operator = "Equal", value = "spot", effect = "NO_SCHEDULE" },
-        { key = "node-role.kubernetes.io/control-plane", effect = "NO_SCHEDULE" },
-        { key = "CriticalAddonsOnly", operator = "Exists" }
-      ]
+        #{ key = "lifecycle", operator = "Equal", value = "spot", effect = "NO_SCHEDULE" },
+        #{ key = "node-role.kubernetes.io/control-plane", effect = "NO_SCHEDULE" },
+        #{ key = "CriticalAddonsOnly", operator = "Exists" }
+      #]
     }
   }
   vpc_id     = module.vpc.vpc_id
