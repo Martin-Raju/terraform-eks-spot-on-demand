@@ -162,8 +162,8 @@ module "eks" {
   tags = {
     cluster = var.cluster_name
   }
-  cluster_security_group_tags = {
-    "karpenter.sh/discovery" = var.cluster_name # Tag the EKS Cluster Security Group for Karpenter
+  security_group_tags = {
+    "karpenter.sh/discovery" = var.cluster_name 
   }
 }
 
