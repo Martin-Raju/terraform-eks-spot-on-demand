@@ -112,18 +112,30 @@ module "eks" {
   addons = {
     coredns = {
       tolerations = [
-        { key = "lifecycle", operator = "Equal", value = "on-demand", effect = "NoSchedule" }
+        { key = "lifecycle", operator = "Equal", value = "on-demand", effect = "NoSchedule" },
+        { key = "node-role.kubernetes.io/control-plane", effect = "NoSchedule" },
+        { key = "CriticalAddonsOnly", operator = "Exists" }
       ]
     }
     eks-pod-identity-agent = {
       before_compute = true
     }
-    kube-proxy = {}
+    kube-proxy = {
+      tolerations = [
+        { key = "lifecycle", operator = "Equal", value = "on-demand", effect = "NoSchedule" },
+        { key = "node-role.kubernetes.io/control-plane", effect = "NoSchedule" },
+        { key = "CriticalAddonsOnly", operator = "Exists" }
+      ]
+    }
     vpc-cni = {
       before_compute = true
+      tolerations = [
+        { key = "lifecycle", operator = "Equal", value = "on-demand", effect = "NoSchedule" },
+        { key = "node-role.kubernetes.io/control-plane", effect = "NoSchedule" },
+        { key = "CriticalAddonsOnly", operator = "Exists" }
+      ]
     }
   }
-
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnets
 
