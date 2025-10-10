@@ -23,7 +23,21 @@ provider "kubernetes" {
   }
 }
 
-provider "helm" {}
+#provider "helm" {}
+
+provider "helm" {
+  alias = "karpenter"
+  kubernetes {
+    host                   = module.eks.cluster_endpoint
+    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+    exec {
+      api_version = "client.authentication.k8s.io/v1beta1"
+      command     = "aws"
+      args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
+    }
+  }
+}
+
 
 # -------------------------
 # Data Block
@@ -244,7 +258,7 @@ module "karpenter" {
 # -------------------------
 
 resource "helm_release" "karpenter" {
-  provider            = kubernetes.helm
+  provider            = helm.kubernetes
   depends_on          = [module.eks, module.karpenter]
   namespace           = "kube-system"
   name                = "karpenter"
