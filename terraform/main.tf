@@ -109,38 +109,65 @@ module "eks" {
   endpoint_public_access                   = false
   endpoint_private_access                  = true
   enable_cluster_creator_admin_permissions = true
+
+  # -------------------------
+  # EKS Add-ons
+  # -------------------------  
+
   addons = {
     coredns = {
-      #tolerations = [
-        #{ key = "lifecycle", operator = "Equal", value = "on-demand", effect = "NoSchedule" },
-        #{ key = "lifecycle", operator = "Equal", value = "spot", effect = "NO_SCHEDULE" },
-        #{ key = "node-role.kubernetes.io/control-plane", effect = "NO_SCHEDULE" },
-        #{ key = "CriticalAddonsOnly", operator = "Exists" }
-      #]
+      tolerations = [
+        {
+          key      = "lifecycle"
+          operator = "Equal"
+          value    = "spot"
+          effect   = "NoSchedule"
+        },
+        {
+          key      = "CriticalAddonsOnly"
+          operator = "Exists"
+        }
+      ]
     }
     eks-pod-identity-agent = {
       before_compute = true
     }
     kube-proxy = {
-      #tolerations = [
-        #{ key = "lifecycle", operator = "Equal", value = "on-demand", effect = "NoSchedule" },
-        #{ key = "lifecycle", operator = "Equal", value = "spot", effect = "NO_SCHEDULE" },
-        #{ key = "node-role.kubernetes.io/control-plane", effect = "NO_SCHEDULE" },
-        #{ key = "CriticalAddonsOnly", operator = "Exists" }
-      #]
+      tolerations = [
+        {
+          key      = "lifecycle"
+          operator = "Equal"
+          value    = "spot"
+          effect   = "NoSchedule"
+        },
+        {
+          key      = "CriticalAddonsOnly"
+          operator = "Exists"
+        }
+      ]
     }
     vpc-cni = {
       before_compute = true
-      #tolerations = [
-        #{ key = "lifecycle", operator = "Equal", value = "on-demand", effect = "NoSchedule" },
-        #{ key = "lifecycle", operator = "Equal", value = "spot", effect = "NO_SCHEDULE" },
-        #{ key = "node-role.kubernetes.io/control-plane", effect = "NO_SCHEDULE" },
-        #{ key = "CriticalAddonsOnly", operator = "Exists" }
-      #]
+      tolerations = [
+        {
+          key      = "lifecycle"
+          operator = "Equal"
+          value    = "spot"
+          effect   = "NoSchedule"
+        },
+        {
+          key      = "CriticalAddonsOnly"
+          operator = "Exists"
+        }
+      ]
     }
   }
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnets
+
+  # -------------------------
+  # Node Groups (Spot only)
+  # -------------------------
 
   eks_managed_node_groups = {
     spot_nodes = {
