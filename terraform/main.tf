@@ -123,25 +123,45 @@ module "eks" {
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnets
 
-  # Spot-only worker nodes
-
   eks_managed_node_groups = {
     spot_nodes = {
       ami_type       = "AL2023_x86_64_STANDARD"
-      instance_types = ["t3.medium", "t3.large"]
+      instance_types = ["t3.small", "t3.medium"]
       capacity_type  = "SPOT"
       min_size       = 1
-      max_size       = 5
-      desired_size   = 3
+      max_size       = 3
+      desired_size   = 1
 
       labels = {
         "lifecycle" = "spot"
+        "nodegroup" = "application"
+        "workload"  = "app"
       }
-
       taints = {
         "lifecycle" = {
           key    = "lifecycle"
           value  = "spot"
+          effect = "NO_SCHEDULE"
+        }
+      }
+    }
+    on_demand_nodes = {
+      ami_type       = "AL2023_x86_64_STANDARD"
+      instance_types = ["t3.medium"]
+      capacity_type  = "ON_DEMAND"
+      min_size       = 1
+      max_size       = 2
+      desired_size   = 1
+
+      labels = {
+        "lifecycle" = "on-demand"
+        "nodegroup" = "system"
+        "workload"  = "system"
+      }
+      taints = {
+        "lifecycle" = {
+          key    = "lifecycle"
+          value  = "on-demand"
           effect = "NO_SCHEDULE"
         }
       }
