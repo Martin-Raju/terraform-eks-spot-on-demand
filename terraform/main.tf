@@ -23,20 +23,20 @@ provider "kubernetes" {
   }
 }
 
-#provider "helm" {}
+provider "helm" {}
 
-provider "helm" {
-  alias = "karpenter"
-  kubernetes {
-    host                   = module.eks.cluster_endpoint
-    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
-    exec {
-      api_version = "client.authentication.k8s.io/v1beta1"
-      command     = "aws"
-      args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
-    }
-  }
-}
+# provider "helm" {
+# alias = "karpenter"
+# kubernetes {
+# host                   = module.eks.cluster_endpoint
+# cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+# exec {
+# api_version = "client.authentication.k8s.io/v1beta1"
+# command     = "aws"
+# args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
+# }
+# }
+# }
 
 
 # -------------------------
@@ -257,29 +257,29 @@ module "karpenter" {
 # Karpenter Helm Release
 # -------------------------
 
-resource "helm_release" "karpenter" {
-  provider            = helm.kubernetes
-  depends_on          = [module.eks, module.karpenter]
-  namespace           = "kube-system"
-  name                = "karpenter"
-  repository          = "oci://public.ecr.aws/karpenter"
-  repository_username = data.aws_ecrpublic_authorization_token.token.user_name
-  repository_password = data.aws_ecrpublic_authorization_token.token.password
-  chart               = "karpenter"
-  version             = "1.4.1"
-  wait                = true
+# resource "helm_release" "karpenter" {
+# provider            = helm.kubernetes
+# depends_on          = [module.eks, module.karpenter]
+# namespace           = "kube-system"
+# name                = "karpenter"
+# repository          = "oci://public.ecr.aws/karpenter"
+# repository_username = data.aws_ecrpublic_authorization_token.token.user_name
+# repository_password = data.aws_ecrpublic_authorization_token.token.password
+# chart               = "karpenter"
+# version             = "1.4.1"
+# wait                = true
 
-  values = [
-    <<-EOT
-serviceAccount:
-name: ${module.karpenter.service_account}
-settings:
-clusterName: ${module.eks.cluster_name}
-clusterEndpoint: ${module.eks.cluster_endpoint}
-interruptionQueue: ${module.karpenter.queue_name}
-EOT
-  ]
-}
+# values = [
+# <<-EOT
+# serviceAccount:
+# name: ${module.karpenter.service_account}
+# settings:
+# clusterName: ${module.eks.cluster_name}
+# clusterEndpoint: ${module.eks.cluster_endpoint}
+# interruptionQueue: ${module.karpenter.queue_name}
+# EOT
+# ]
+# }
 
 
 # -------------------------
