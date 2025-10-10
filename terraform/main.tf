@@ -187,34 +187,34 @@ module "eks" {
         "workload"  = "app"
       }
       # taints = {
-        # "lifecycle" = {
-          # key    = "lifecycle"
-          # value  = "spot"
-          # effect = "NO_SCHEDULE"
-        # }
-      # }
-    }
-    # on_demand_nodes = {
-      # ami_type       = "AL2023_x86_64_STANDARD"
-      # instance_types = ["t3.medium"]
-      # capacity_type  = "ON_DEMAND"
-      # min_size       = 1
-      # max_size       = 3
-      # desired_size   = 2
-
-      # labels = {
-        # "lifecycle" = "on-demand"
-        # "nodegroup" = "system"
-        # "workload"  = "system"
-      # }
-      # taints = {
       # "lifecycle" = {
       # key    = "lifecycle"
-      # value  = "on-demand"
+      # value  = "spot"
       # effect = "NO_SCHEDULE"
       # }
       # }
     }
+    # on_demand_nodes = {
+    # ami_type       = "AL2023_x86_64_STANDARD"
+    # instance_types = ["t3.medium"]
+    # capacity_type  = "ON_DEMAND"
+    # min_size       = 1
+    # max_size       = 3
+    # desired_size   = 2
+
+    # labels = {
+    # "lifecycle" = "on-demand"
+    # "nodegroup" = "system"
+    # "workload"  = "system"
+    # }
+    # taints = {
+    # "lifecycle" = {
+    # key    = "lifecycle"
+    # value  = "on-demand"
+    # effect = "NO_SCHEDULE"
+    # }
+    # }
+    #}
   }
 
   tags = {
