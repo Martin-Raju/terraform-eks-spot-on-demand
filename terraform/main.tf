@@ -164,49 +164,49 @@ module "eks" {
   }
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnets
+  # eks_managed_node_groups = {
+  # karpenter = {
+  # ami_type       = "AL2023_x86_64_STANDARD"
+  # instance_types = ["t3.medium"]
+  # -------------------------
+  # Node Groups (Spot only)
+  # -------------------------
+
   eks_managed_node_groups = {
-    karpenter = {
+    spot_nodes = {
+      ami_type       = "AL2023_x86_64_STANDARD"
+      instance_types = ["t3.small", "t3.medium"]
+      capacity_type  = "SPOT"
+      min_size       = 1
+      max_size       = 3
+      desired_size   = 1
+
+      labels = {
+        "lifecycle" = "spot"
+        "nodegroup" = "application"
+        "workload"  = "app"
+      }
+      taints = {
+        "lifecycle" = {
+          key    = "lifecycle"
+          value  = "spot"
+          effect = "NO_SCHEDULE"
+        }
+      }
+    }
+    on_demand_nodes = {
       ami_type       = "AL2023_x86_64_STANDARD"
       instance_types = ["t3.medium"]
-      # -------------------------
-      # Node Groups (Spot only)
-      # -------------------------
+      capacity_type  = "ON_DEMAND"
+      min_size       = 1
+      max_size       = 3
+      desired_size   = 2
 
-      # eks_managed_node_groups = {
-      # spot_nodes = {
-      # ami_type       = "AL2023_x86_64_STANDARD"
-      # instance_types = ["t3.small", "t3.medium"]
-      # capacity_type  = "SPOT"
-      # min_size       = 1
-      # max_size       = 3
-      # desired_size   = 1
-
-      # labels = {
-      # "lifecycle" = "spot"
-      # "nodegroup" = "application"
-      # "workload"  = "app"
-      # }
-      # taints = {
-      # "lifecycle" = {
-      # key    = "lifecycle"
-      # value  = "spot"
-      # effect = "NO_SCHEDULE"
-      # }
-      # }
-      # }
-      # on_demand_nodes = {
-      # ami_type       = "AL2023_x86_64_STANDARD"
-      # instance_types = ["t3.medium"]
-      # capacity_type  = "ON_DEMAND"
-      # min_size       = 1
-      # max_size       = 3
-      # desired_size   = 2
-
-      # labels = {
-      # "lifecycle" = "on-demand"
-      # "nodegroup" = "system"
-      # "workload"  = "system"
-      # }
+      labels = {
+        "lifecycle" = "on-demand"
+        "nodegroup" = "system"
+        "workload"  = "system"
+      }
       # taints = {
       # "lifecycle" = {
       # key    = "lifecycle"
