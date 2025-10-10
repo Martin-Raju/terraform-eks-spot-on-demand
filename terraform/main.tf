@@ -132,7 +132,7 @@ module "eks" {
       capacity_type  = "SPOT"
       min_size       = 1
       max_size       = 5
-      desired_size   = 2
+      desired_size   = 3
 
       labels = {
         "lifecycle" = "spot"
