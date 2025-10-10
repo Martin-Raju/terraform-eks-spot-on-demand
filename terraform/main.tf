@@ -154,9 +154,9 @@ module "eks" {
       ami_type       = "AL2023_x86_64_STANDARD"
       instance_types = ["t3.small", "t3.medium"]
       capacity_type  = "SPOT"
-      min_size       = 1
-      max_size       = 3
-      desired_size   = 1
+      min_size       = length(data.aws_availability_zones.available.names)
+      max_size       = length(data.aws_availability_zones.available.names)
+      desired_size   = length(data.aws_availability_zones.available.names)
 
       labels = {
         "lifecycle" = "spot"
