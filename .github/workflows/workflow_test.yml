@@ -20,6 +20,12 @@ jobs:
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.6.0
+
+      - name: Clean .terraform directory
+        run: |
+          echo "Cleaning existing .terraform directory..."
+          rm -rf .terraform .terraform.lock.hcl
+          echo "Cleanup complete."          
  
       - name: Terraform Init
         working-directory: ./terraform
@@ -31,5 +37,5 @@ jobs:
 
       - name: Terraform Apply
         working-directory: ./terraform
-        #run: terraform apply -input=false -auto-approve tfplan
-        run: terraform destroy -auto-approve
+        run: terraform apply -input=false -auto-approve tfplan
+        #run: terraform destroy -auto-approve

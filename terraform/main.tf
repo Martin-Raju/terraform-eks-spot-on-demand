@@ -164,62 +164,65 @@ module "eks" {
   }
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnets
+  eks_managed_node_groups = {
+    karpenter = {
+      ami_type       = "AL2023_x86_64_STANDARD"
+      instance_types = ["t3.medium"]
+      # -------------------------
+      # Node Groups (Spot only)
+      # -------------------------
 
-  # -------------------------
-  # Node Groups (Spot only)
-  # -------------------------
+      # eks_managed_node_groups = {
+      # spot_nodes = {
+      # ami_type       = "AL2023_x86_64_STANDARD"
+      # instance_types = ["t3.small", "t3.medium"]
+      # capacity_type  = "SPOT"
+      # min_size       = 1
+      # max_size       = 3
+      # desired_size   = 1
 
-  # eks_managed_node_groups = {
-  # spot_nodes = {
-  # ami_type       = "AL2023_x86_64_STANDARD"
-  # instance_types = ["t3.small", "t3.medium"]
-  # capacity_type  = "SPOT"
-  # min_size       = 1
-  # max_size       = 3
-  # desired_size   = 1
+      # labels = {
+      # "lifecycle" = "spot"
+      # "nodegroup" = "application"
+      # "workload"  = "app"
+      # }
+      # taints = {
+      # "lifecycle" = {
+      # key    = "lifecycle"
+      # value  = "spot"
+      # effect = "NO_SCHEDULE"
+      # }
+      # }
+      # }
+      # on_demand_nodes = {
+      # ami_type       = "AL2023_x86_64_STANDARD"
+      # instance_types = ["t3.medium"]
+      # capacity_type  = "ON_DEMAND"
+      # min_size       = 1
+      # max_size       = 3
+      # desired_size   = 2
 
-  # labels = {
-  # "lifecycle" = "spot"
-  # "nodegroup" = "application"
-  # "workload"  = "app"
-  # }
-  # taints = {
-  # "lifecycle" = {
-  # key    = "lifecycle"
-  # value  = "spot"
-  # effect = "NO_SCHEDULE"
-  # }
-  # }
-  # }
-  # on_demand_nodes = {
-  # ami_type       = "AL2023_x86_64_STANDARD"
-  # instance_types = ["t3.medium"]
-  # capacity_type  = "ON_DEMAND"
-  # min_size       = 1
-  # max_size       = 3
-  # desired_size   = 2
-
-  # labels = {
-  # "lifecycle" = "on-demand"
-  # "nodegroup" = "system"
-  # "workload"  = "system"
-  # }
-  # taints = {
-  # "lifecycle" = {
-  # key    = "lifecycle"
-  # value  = "on-demand"
-  # effect = "NO_SCHEDULE"
-  # }
-  # }
-  # }
-  # }
+      # labels = {
+      # "lifecycle" = "on-demand"
+      # "nodegroup" = "system"
+      # "workload"  = "system"
+      # }
+      # taints = {
+      # "lifecycle" = {
+      # key    = "lifecycle"
+      # value  = "on-demand"
+      # effect = "NO_SCHEDULE"
+      # }
+      # }
+    }
+  }
 
   tags = {
     cluster = var.cluster_name
   }
-  security_group_tags = {
-    "karpenter.sh/discovery" = var.cluster_name
-  }
+  # security_group_tags = {
+  # "karpenter.sh/discovery" = var.cluster_name
+  # }
 }
 
 # -------------------------
@@ -240,28 +243,28 @@ module "karpenter" {
 # Karpenter Helm Release
 # -------------------------
 
-#resource "helm_release" "karpenter" {
-#  depends_on          = [module.eks, module.karpenter]
-#  namespace           = "kube-system"
-#  name                = "karpenter"
-#  repository          = "oci://public.ecr.aws/karpenter"
-#  repository_username = data.aws_ecrpublic_authorization_token.token.user_name
-#  repository_password = data.aws_ecrpublic_authorization_token.token.password
-#  chart               = "karpenter"
-#  version             = "1.4.1"
-#  wait                = true
+# resource "helm_release" "karpenter" {
+# depends_on          = [module.eks, module.karpenter]
+# namespace           = "kube-system"
+# name                = "karpenter"
+# repository          = "oci://public.ecr.aws/karpenter"
+# repository_username = data.aws_ecrpublic_authorization_token.token.user_name
+# repository_password = data.aws_ecrpublic_authorization_token.token.password
+# chart               = "karpenter"
+# version             = "1.4.1"
+# wait                = true
 
-#  values = [
-#    <<-EOT
-#    serviceAccount:
-#      name: ${module.karpenter.service_account}
-#    settings:
-#      clusterName: ${module.eks.cluster_name}
-#      clusterEndpoint: ${module.eks.cluster_endpoint}
-#      interruptionQueue: ${module.karpenter.queue_name}
-#    EOT
-#  ]
-#}
+# values = [
+# <<-EOT
+# serviceAccount:
+# name: ${module.karpenter.service_account}
+# settings:
+# clusterName: ${module.eks.cluster_name}
+# clusterEndpoint: ${module.eks.cluster_endpoint}
+# interruptionQueue: ${module.karpenter.queue_name}
+# EOT
+# ]
+# }
 
 
 # -------------------------
