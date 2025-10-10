@@ -112,37 +112,15 @@ module "eks" {
   addons = {
     coredns = {
       tolerations = [
-        {
-          key      = "lifecycle"
-          operator = "Equal"
-          value    = "on-demand"
-          effect   = "NoSchedule"
-        }
+        { key = "lifecycle", operator = "Equal", value = "on-demand", effect = "NoSchedule" }
       ]
     }
     eks-pod-identity-agent = {
       before_compute = true
     }
-    kube-proxy = {
-      tolerations = [
-        {
-          key      = "lifecycle"
-          operator = "Equal"
-          value    = "on-demand"
-          effect   = "NoSchedule"
-        }
-      ]
-    }
+    kube-proxy = {}
     vpc-cni = {
       before_compute = true
-      tolerations = [
-        {
-          key      = "lifecycle"
-          operator = "Equal"
-          value    = "on-demand"
-          effect   = "NoSchedule"
-        }
-      ]
     }
   }
 
