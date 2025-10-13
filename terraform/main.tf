@@ -235,6 +235,23 @@ resource "helm_release" "karpenter" {
 }
 
 # -------------------------
+# Disable EKS public endpoint AFTER Helm
+# -------------------------
+resource "aws_eks_cluster" "disable_public_endpoint" {
+  name     = module.eks.cluster_name
+  role_arn = module.eks.cluster_iam_role_arn
+
+  vpc_config {
+    subnet_ids              = module.vpc.private_subnets
+    security_group_ids      = [module.eks.cluster_security_group_id]
+    endpoint_private_access = true
+    endpoint_public_access  = false
+  }
+
+  depends_on = [helm_release.karpenter]
+}
+
+# -------------------------
 # Bastion Security Group
 # -------------------------
 module "bastion_sg" {
