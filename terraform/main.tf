@@ -13,6 +13,7 @@ provider "aws" {
 }
 
 provider "kubernetes" {
+  alias                  = "eks"
   host                   = module.eks.cluster_endpoint
   cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
 
@@ -23,7 +24,18 @@ provider "kubernetes" {
   }
 }
 
-provider "helm" {}
+provider "helm" {
+  kubernetes {
+    host                   = module.eks.cluster_endpoint
+    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+
+    exec {
+      api_version = "client.authentication.k8s.io/v1beta1"
+      command     = "aws"
+      args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
+    }
+  }
+}
 
 # -------------------------
 # Data Block
@@ -178,10 +190,22 @@ module "karpenter" {
 }
 
 # -------------------------
+# Wait for EKS API to settle 
+# -------------------------
+resource "time_sleep" "wait_for_eks" {
+  # depends on the EKS module finishing
+  depends_on = [module.eks]
+
+  # 60s is typically enough; increase if your CI is slow
+  create_duration = "90s"
+}
+
+# -------------------------
 # Karpenter Helm Release
 # -------------------------
 
 resource "helm_release" "karpenter" {
+  provider = helm
   depends_on = [
     module.eks,
     module.karpenter
