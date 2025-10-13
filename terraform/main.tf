@@ -232,9 +232,6 @@ resource "helm_release" "karpenter" {
       enabled: false
     EOT
   ]
-  lifecycle {
-    ignore_errors = true
-  }
 }
 
 # -------------------------
