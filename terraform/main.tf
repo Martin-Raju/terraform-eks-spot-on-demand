@@ -180,7 +180,7 @@ module "karpenter" {
 
   # Name needs to match role name passed to the EC2NodeClass
   node_iam_role_use_name_prefix   = false
-  node_iam_role_name              = var.cluster_name
+  node_iam_role_name              = "${var.cluster_name}-karpenter"
   create_pod_identity_association = true
 
   # Attach additional IAM policies to the Karpenter node IAM role
