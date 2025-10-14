@@ -1,7 +1,7 @@
 kubernetes_version        = "1.33"
 vpc_cidr                  = "10.0.0.0/16"
 aws_region                = "us-east-1"
-cluster_name              = "EKS-poc-Cluster"
+cluster_name              = "eks-poc-cluster"
 environment               = "stage"
 bucket_name               = "poc-tfstate-bucket-0123456"
 worker_mgmt_ingress_cidrs = ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
