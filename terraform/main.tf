@@ -209,17 +209,19 @@ resource "time_sleep" "wait_for_eks" {
 # Karpenter Helm Release
 # -------------------------
 resource "helm_release" "karpenter" {
-  count            = var.eks_public_access_enabled ? 1 : 0
-  provider         = helm
-  depends_on       = [module.eks, module.karpenter, time_sleep.wait_for_eks]
-  namespace        = "karpenter"
-  name             = "karpenter"
-  repository       = "oci://public.ecr.aws/karpenter"
-  chart            = "karpenter"
-  version          = "v1.12.0"
-  skip_crds        = false
-  create_namespace = true
-  wait             = true
+  count               = var.eks_public_access_enabled ? 1 : 0
+  provider            = helm
+  depends_on          = [module.eks, module.karpenter, time_sleep.wait_for_eks]
+  namespace           = "karpenter"
+  name                = "karpenter"
+  repository          = "oci://public.ecr.aws/karpenter"
+  repository_username = data.aws_ecrpublic_authorization_token.token.user_name
+  repository_password = data.aws_ecrpublic_authorization_token.token.password
+  chart               = "karpenter"
+  version             = "1.12.0"
+  skip_crds           = false
+  create_namespace    = true
+  wait                = true
 
   values = [
     <<-EOT
