@@ -210,6 +210,7 @@ resource "time_sleep" "wait_for_eks" {
 # -------------------------
 resource "helm_release" "karpenter" {
   count               = var.eks_public_access_enabled ? 1 : 0
+  name                = "${module.label.environment}-karpenter"
   provider            = helm
   depends_on          = [module.eks, module.karpenter, time_sleep.wait_for_eks]
   namespace           = "karpenter"
