@@ -220,7 +220,9 @@ resource "helm_release" "karpenter" {
   repository_password = data.aws_ecrpublic_authorization_token.token.password
   chart               = "karpenter"
   version             = "1.6.0"
-  wait                = false
+  skip_crds           = false
+  create_namespace    = true
+  wait                = true
 
   values = [
     <<-EOT
