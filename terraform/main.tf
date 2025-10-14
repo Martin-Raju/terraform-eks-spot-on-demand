@@ -115,10 +115,11 @@ module "vpc" {
 # -------------------------
 
 module "eks" {
-  source                                   = "./modules/terraform-aws-eks-21.3.2"
-  name                                     = "${module.label.environment}-EKS-cluster"
-  kubernetes_version                       = var.kubernetes_version
-  endpoint_public_access                   = false
+  source                 = "./modules/terraform-aws-eks-21.3.2"
+  name                   = "${module.label.environment}-EKS-cluster"
+  kubernetes_version     = var.kubernetes_version
+  endpoint_public_access = var.eks_public_access_enabled
+  #endpoint_public_access                   = false
   endpoint_private_access                  = true
   enable_cluster_creator_admin_permissions = true
 
@@ -205,6 +206,7 @@ resource "time_sleep" "wait_for_eks" {
 # -------------------------
 
 resource "helm_release" "karpenter" {
+  count    = var.eks_public_access_enabled ? 1 : 0
   provider = helm
   depends_on = [
     module.eks,
