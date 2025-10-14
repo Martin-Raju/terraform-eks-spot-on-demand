@@ -204,17 +204,12 @@ resource "time_sleep" "wait_for_eks" {
 # -------------------------
 # Karpenter Helm Release
 # -------------------------
-
-# -------------------------
-# Karpenter Helm Release
-# -------------------------
 resource "helm_release" "karpenter" {
   count               = var.eks_public_access_enabled ? 1 : 0
   name                = "${module.label.environment}-karpenter"
   provider            = helm
   depends_on          = [module.eks, module.karpenter, time_sleep.wait_for_eks]
   namespace           = "karpenter"
-  name                = "karpenter"
   repository          = "oci://public.ecr.aws/karpenter"
   repository_username = data.aws_ecrpublic_authorization_token.token.user_name
   repository_password = data.aws_ecrpublic_authorization_token.token.password
