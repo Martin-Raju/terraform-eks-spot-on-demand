@@ -39,4 +39,8 @@ variable "ssh_key_name" {
   type        = string
 }
 
+variable "eks_public_access_enabled" {
+  description = "Set to true to deploy the Karpenter Helm chart. Set to false if using a separate runner for private EKS."
+  type        = bool
+}
 

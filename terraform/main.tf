@@ -13,6 +13,7 @@ provider "aws" {
 }
 
 provider "kubernetes" {
+  alias                  = "eks"
   host                   = module.eks.cluster_endpoint
   cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
 
@@ -23,21 +24,18 @@ provider "kubernetes" {
   }
 }
 
-provider "helm" {}
+provider "helm" {
+  kubernetes = {
+    host                   = module.eks.cluster_endpoint
+    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
 
-# provider "helm" {
-# alias = "karpenter"
-# kubernetes {
-# host                   = module.eks.cluster_endpoint
-# cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
-# exec {
-# api_version = "client.authentication.k8s.io/v1beta1"
-# command     = "aws"
-# args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
-# }
-# }
-# }
-
+    exec = {
+      api_version = "client.authentication.k8s.io/v1beta1"
+      command     = "aws"
+      args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
+    }
+  }
+}
 
 # -------------------------
 # Data Block
@@ -117,10 +115,11 @@ module "vpc" {
 # -------------------------
 
 module "eks" {
-  source                                   = "./modules/terraform-aws-eks-21.3.2"
-  name                                     = "${module.label.environment}-EKS-cluster"
-  kubernetes_version                       = var.kubernetes_version
-  endpoint_public_access                   = false
+  source                 = "./modules/terraform-aws-eks-21.3.2"
+  name                   = "${module.label.environment}-EKS-cluster"
+  kubernetes_version     = var.kubernetes_version
+  endpoint_public_access = var.eks_public_access_enabled
+  #endpoint_public_access                   = false
   endpoint_private_access                  = true
   enable_cluster_creator_admin_permissions = true
 
@@ -129,114 +128,47 @@ module "eks" {
   # -------------------------  
 
   addons = {
-    coredns = {
-      # tolerations = [
-      # {
-      # key      = "lifecycle"
-      # operator = "Equal"
-      # value    = "spot"
-      # effect   = "NoSchedule"
-      # },
-      # {
-      # key      = "CriticalAddonsOnly"
-      # operator = "Exists"
-      # }
-      # ]
-    }
+    coredns = {}
     eks-pod-identity-agent = {
       before_compute = true
     }
-    kube-proxy = {
-      # tolerations = [
-      # {
-      # key      = "lifecycle"
-      # operator = "Equal"
-      # value    = "spot"
-      # effect   = "NoSchedule"
-      # },
-      # {
-      # key      = "CriticalAddonsOnly"
-      # operator = "Exists"
-      # }
-      # ]
-    }
+    kube-proxy = {}
     vpc-cni = {
       before_compute = true
-      # tolerations = [
-      # {
-      # key      = "lifecycle"
-      # operator = "Equal"
-      # value    = "spot"
-      # effect   = "NoSchedule"
-      # },
-      # {
-      # key      = "CriticalAddonsOnly"
-      # operator = "Exists"
-      # }
-      # ]
     }
   }
-  vpc_id     = module.vpc.vpc_id
-  subnet_ids = module.vpc.private_subnets
-  # eks_managed_node_groups = {
-  # karpenter = {
-  # ami_type       = "AL2023_x86_64_STANDARD"
-  # instance_types = ["t3.medium"]
+  vpc_id                   = module.vpc.vpc_id
+  subnet_ids               = module.vpc.private_subnets
+  control_plane_subnet_ids = module.vpc.intra_subnets
+
   # -------------------------
   # Node Groups (Spot only)
   # -------------------------
 
   eks_managed_node_groups = {
-    spot_nodes = {
+    karpenter = {
       ami_type       = "AL2023_x86_64_STANDARD"
       instance_types = ["t3.small", "t3.medium"]
       capacity_type  = "SPOT"
       min_size       = 1
       max_size       = 3
-      desired_size   = 1
+      desired_size   = 2
 
       labels = {
-        "lifecycle" = "spot"
-        "nodegroup" = "application"
-        "workload"  = "app"
+        # Used to ensure Karpenter runs on nodes that it does not manage
+        "karpenter.sh/controller" = "true"
       }
-      # taints = {
-      # "lifecycle" = {
-      # key    = "lifecycle"
-      # value  = "spot"
-      # effect = "NO_SCHEDULE"
-      # }
-      # }
     }
-    # on_demand_nodes = {
-    # ami_type       = "AL2023_x86_64_STANDARD"
-    # instance_types = ["t3.medium"]
-    # capacity_type  = "ON_DEMAND"
-    # min_size       = 1
-    # max_size       = 3
-    # desired_size   = 2
-
-    # labels = {
-    # "lifecycle" = "on-demand"
-    # "nodegroup" = "system"
-    # "workload"  = "system"
-    # }
-    # taints = {
-    # "lifecycle" = {
-    # key    = "lifecycle"
-    # value  = "on-demand"
-    # effect = "NO_SCHEDULE"
-    # }
-    # }
-    #}
   }
+
+  node_security_group_tags = {
+    "karpenter.sh/discovery" = var.cluster_name
+  }
+
 
   tags = {
     cluster = var.cluster_name
   }
-  # security_group_tags = {
-  # "karpenter.sh/discovery" = var.cluster_name
-  # }
 }
 
 # -------------------------
@@ -247,6 +179,11 @@ module "karpenter" {
   source       = "./modules/terraform-aws-eks-21.3.2/modules/karpenter"
   cluster_name = module.eks.cluster_name
 
+  # Name needs to match role name passed to the EC2NodeClass
+  node_iam_role_use_name_prefix   = false
+  node_iam_role_name              = "${var.cluster_name}-karpenter"
+  create_pod_identity_association = true
+
   # Attach additional IAM policies to the Karpenter node IAM role
   node_iam_role_additional_policies = {
     AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
@@ -254,33 +191,53 @@ module "karpenter" {
 }
 
 # -------------------------
+# Wait for EKS API to settle 
+# -------------------------
+resource "time_sleep" "wait_for_eks" {
+  # depends on the EKS module finishing
+  depends_on = [module.eks]
+
+  # 60s is typically enough; increase if your CI is slow
+  create_duration = "180s"
+}
+
+# -------------------------
 # Karpenter Helm Release
 # -------------------------
 
-# resource "helm_release" "karpenter" {
-# provider            = helm.kubernetes
-# depends_on          = [module.eks, module.karpenter]
-# namespace           = "kube-system"
-# name                = "karpenter"
-# repository          = "oci://public.ecr.aws/karpenter"
-# repository_username = data.aws_ecrpublic_authorization_token.token.user_name
-# repository_password = data.aws_ecrpublic_authorization_token.token.password
-# chart               = "karpenter"
-# version             = "1.4.1"
-# wait                = true
+resource "helm_release" "karpenter" {
+  count    = var.eks_public_access_enabled ? 1 : 0
+  provider = helm
+  depends_on = [
+    module.eks,
+    module.karpenter,
+    time_sleep.wait_for_eks
+  ]
+  namespace           = "kube-system"
+  name                = "karpenter"
+  repository          = "oci://public.ecr.aws/karpenter"
+  repository_username = data.aws_ecrpublic_authorization_token.token.user_name
+  repository_password = data.aws_ecrpublic_authorization_token.token.password
+  chart               = "karpenter"
+  version             = "1.6.0"
+  skip_crds           = false
+  create_namespace    = true
+  wait                = true
 
-# values = [
-# <<-EOT
-# serviceAccount:
-# name: ${module.karpenter.service_account}
-# settings:
-# clusterName: ${module.eks.cluster_name}
-# clusterEndpoint: ${module.eks.cluster_endpoint}
-# interruptionQueue: ${module.karpenter.queue_name}
-# EOT
-# ]
-# }
-
+  values = [
+    <<-EOT
+    nodeSelector:
+      karpenter.sh/controller: 'true'
+    dnsPolicy: Default
+    settings:
+      clusterName: ${module.eks.cluster_name}
+      clusterEndpoint: ${module.eks.cluster_endpoint}
+      interruptionQueue: ${module.karpenter.queue_name}
+    webhook:
+      enabled: false
+    EOT
+  ]
+}
 
 # -------------------------
 # Bastion Security Group
