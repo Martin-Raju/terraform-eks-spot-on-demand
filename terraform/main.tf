@@ -16,7 +16,8 @@ provider "kubernetes" {
   alias = "eks"
   #host                   = module.eks.cluster_endpoint
   host                   = coalesce(module.eks.cluster_endpoint, "https://not-yet-known")
-  cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+  #cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+  cluster_ca_certificate = base64decode(coalesce(module.eks.cluster_certificate_authority_data, "IA=="))
 
   exec {
     api_version = "client.authentication.k8s.io/v1beta1"
@@ -29,7 +30,8 @@ provider "helm" {
   kubernetes = {
     #host                   = module.eks.cluster_endpoint
     host                   = coalesce(module.eks.cluster_endpoint, "https://not-yet-known")
-    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+    #cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+    cluster_ca_certificate = base64decode(coalesce(module.eks.cluster_certificate_authority_data, "IA=="))
 
     exec = {
       api_version = "client.authentication.k8s.io/v1beta1"
