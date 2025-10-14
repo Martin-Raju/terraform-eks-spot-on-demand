@@ -211,6 +211,7 @@ resource "helm_release" "karpenter" {
   depends_on = [
     module.eks,
     module.karpenter
+    time_sleep.wait_for_eks 
   ]
   namespace           = "kube-system"
   name                = "karpenter"
@@ -262,7 +263,10 @@ resource "kubernetes_manifest" "karpenter_nodeclass" {
       }]
     }
   }
-  depends_on = [helm_release.karpenter]
+  depends_on = [
+helm_release.karpenter,
+time_sleep.wait_for_eks 
+]
 }
 
 ##################################
@@ -321,7 +325,8 @@ resource "kubernetes_manifest" "karpenter_nodepool" {
   }
   depends_on = [
     kubernetes_manifest.karpenter_nodeclass,
-    helm_release.karpenter
+    helm_release.karpenter,
+    time_sleep.wait_for_eks
   ]
 }
 
