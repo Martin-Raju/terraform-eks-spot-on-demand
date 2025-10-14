@@ -239,55 +239,55 @@ resource "helm_release" "karpenter" {
 #karpenter_provisioner
 ##################################
 
-resource "kubernetes_manifest" "karpenter_provisioner" {
-  provider = kubernetes.eks
-  manifest = {
-    apiVersion = "karpenter.sh/v1alpha5"
-    kind       = "Provisioner"
-    metadata = {
-      name = "default"
-    }
-    spec = {
-      cluster = {
-        name     = module.eks.cluster_name
-        endpoint = module.eks.cluster_endpoint
-      }
-      ttlSecondsAfterEmpty = 30
-      limits = {
-        resources = {
-          cpu    = "20"
-          memory = "10Gi"
-        }
-      }
-      provider = {
-        subnetSelector = {
-          "karpenter.sh/discovery" = var.cluster_name
-        }
-        securityGroupSelector = {
-          "karpenter.sh/discovery" = var.cluster_name
-        }
-      }
-      requirements = [
-        {
-          key      = "karpenter.sh/capacity-type"
-          operator = "In"
-          values   = ["spot"]
-        },
-        {
-          key      = "kubernetes.io/os"
-          operator = "In"
-          values   = ["linux"]
-        }
-      ]
-    }
-  }
+# resource "kubernetes_manifest" "karpenter_provisioner" {
+  # provider = kubernetes.eks
+  # manifest = {
+    # apiVersion = "karpenter.sh/v1alpha5"
+    # kind       = "Provisioner"
+    # metadata = {
+      # name = "default"
+    # }
+    # spec = {
+      # cluster = {
+        # name     = module.eks.cluster_name
+        # endpoint = module.eks.cluster_endpoint
+      # }
+      # ttlSecondsAfterEmpty = 30
+      # limits = {
+        # resources = {
+          # cpu    = "20"
+          # memory = "10Gi"
+        # }
+      # }
+      # provider = {
+        # subnetSelector = {
+          # "karpenter.sh/discovery" = var.cluster_name
+        # }
+        # securityGroupSelector = {
+          # "karpenter.sh/discovery" = var.cluster_name
+        # }
+      # }
+      # requirements = [
+        # {
+          # key      = "karpenter.sh/capacity-type"
+          # operator = "In"
+          # values   = ["spot"]
+        # },
+        # {
+          # key      = "kubernetes.io/os"
+          # operator = "In"
+          # values   = ["linux"]
+        # }
+      # ]
+    # }
+  # }
 
-  depends_on = [
-    module.eks,
-    helm_release.karpenter,
-    time_sleep.wait_for_eks
-  ]
-}
+  # depends_on = [
+    # module.eks,
+    # helm_release.karpenter,
+    # time_sleep.wait_for_eks
+  # ]
+# }
 
 # -------------------------
 # Bastion Security Group
