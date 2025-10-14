@@ -236,57 +236,92 @@ resource "helm_release" "karpenter" {
   ]
 }
 ##################################
-#karpenter_provisioner
+#karpenter_nodeclass
 ##################################
 
-resource "kubernetes_manifest" "karpenter_provisioner" {
-  count = var.eks_public_access_enabled ? 1 : 0
+resource "kubernetes_manifest" "karpenter_nodeclass" {
   provider = kubernetes.eks
   manifest = {
-    apiVersion = "karpenter.sh/v1alpha5"
-    kind       = "Provisioner"
+    apiVersion = "karpenter.k8s.aws/v1"
+    kind       = "EC2NodeClass"
     metadata = {
       name = "default"
     }
     spec = {
-      cluster = {
-        name     = module.eks.cluster_name
-        endpoint = module.eks.cluster_endpoint
-      }
-      ttlSecondsAfterEmpty = 30
-      limits = {
-        resources = {
-          cpu    = "20"
-          memory = "10Gi"
-        }
-      }
-      provider = {
-        subnetSelector = {
+      amiSelectorTerms = [{ alias = "al2@latest" }]
+      role             = "${var.cluster_name}-karpenter"
+      subnetSelectorTerms = [{
+        tags = {
           "karpenter.sh/discovery" = var.cluster_name
         }
-        securityGroupSelector = {
+      }]
+      securityGroupSelectorTerms = [{
+        tags = {
           "karpenter.sh/discovery" = var.cluster_name
         }
-      }
-      requirements = [
-        {
-          key      = "karpenter.sh/capacity-type"
-          operator = "In"
-          values   = ["spot"]
-        },
-        {
-          key      = "kubernetes.io/os"
-          operator = "In"
-          values   = ["linux"]
-        }
-      ]
+      }]
     }
   }
+  depends_on = [helm_release.karpenter]
+}
 
+##################################
+#karpenter_nodepool
+##################################
+
+resource "kubernetes_manifest" "karpenter_nodepool" {
+  provider = kubernetes.eks
+  manifest = {
+    apiVersion = "karpenter.sh/v1"
+    kind       = "NodePool"
+    metadata = {
+      name = "default"
+    }
+    spec = {
+      template = {
+        spec = {
+          nodeClassRef = {
+            group = "karpenter.k8s.aws"
+            kind  = "EC2NodeClass"
+            name  = "default"
+          }
+          requirements = [
+            {
+              key      = "karpenter.k8s.aws/instance-category"
+              operator = "In"
+              values   = ["t", "m", "c", "r"]
+            },
+            {
+              key      = "karpenter.k8s.aws/instance-hypervisor"
+              operator = "In"
+              values   = ["nitro"]
+            },
+            {
+              key      = "karpenter.k8s.aws/instance-cpu"
+              operator = "In"
+              values   = ["2", "4", "8", "16"]
+            },
+            {
+              key      = "karpenter.k8s.aws/capacity-type"
+              operator = "In"
+              values   = ["spot"]
+            },
+            {
+              key      = "kubernetes.io/os"
+              operator = "In"
+              values   = ["linux"]
+            }
+          ]
+        }
+      }
+      limits = {
+        cpu = 1000
+      }
+    }
+  }
   depends_on = [
-    module.eks,
-    helm_release.karpenter,
-    time_sleep.wait_for_eks
+    kubernetes_manifest.karpenter_nodeclass,
+    helm_release.karpenter
   ]
 }
 
