@@ -240,6 +240,7 @@ resource "helm_release" "karpenter" {
 ##################################
 
 resource "kubernetes_manifest" "karpenter_provisioner" {
+  count = var.eks_public_access_enabled ? 1 : 0
   provider = kubernetes.eks
   manifest = {
     apiVersion = "karpenter.sh/v1alpha5"
