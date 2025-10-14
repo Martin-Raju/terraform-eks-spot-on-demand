@@ -22,7 +22,6 @@ provider "kubernetes" {
     command     = "aws"
     args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
   }
-  depends_on = [module.eks, time_sleep.wait_for_eks]
 }
 
 provider "helm" {
