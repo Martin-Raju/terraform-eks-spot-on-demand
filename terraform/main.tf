@@ -205,39 +205,43 @@ resource "time_sleep" "wait_for_eks" {
 # Karpenter Helm Release
 # -------------------------
 
+# -------------------------
+# Karpenter Helm Release
+# -------------------------
 resource "helm_release" "karpenter" {
-  count    = var.eks_public_access_enabled ? 1 : 0
-  provider = helm
-  depends_on = [
-    module.eks,
-    module.karpenter,
-    time_sleep.wait_for_eks
-  ]
-  namespace           = "kube-system"
-  name                = "karpenter"
-  repository          = "oci://public.ecr.aws/karpenter"
-  repository_username = data.aws_ecrpublic_authorization_token.token.user_name
-  repository_password = data.aws_ecrpublic_authorization_token.token.password
-  chart               = "karpenter"
-  version             = "1.6.0"
-  skip_crds           = false
-  create_namespace    = true
-  wait                = true
+  count             = var.eks_public_access_enabled ? 1 : 0
+  provider          = helm
+  depends_on        = [module.eks, module.karpenter, time_sleep.wait_for_eks]
+  namespace         = "karpenter"
+  name              = "karpenter"
+  repository        = "oci://public.ecr.aws/karpenter"
+  chart             = "karpenter"
+  version           = "v1.12.0"
+  skip_crds         = false
+  create_namespace  = true
+  wait              = true
 
   values = [
     <<-EOT
-    nodeSelector:
-      karpenter.sh/controller: 'true'
-    dnsPolicy: Default
+    serviceAccount:
+      create: false
+      name: "${module.karpenter.node_iam_role_name}"
     settings:
       clusterName: ${module.eks.cluster_name}
       clusterEndpoint: ${module.eks.cluster_endpoint}
       interruptionQueue: ${module.karpenter.queue_name}
-    webhook:
-      enabled: false
+    resources:
+      constraints:
+        instanceTypes: ["t3.small","t3.medium"]
+        capacityTypes: ["spot","on-demand"]
+      subnets:
+        - ${join("\n        - ", module.vpc.private_subnets)}
+      securityGroups:
+        - ${join("\n        - ", [module.eks.cluster_security_group_id])}
     EOT
   ]
 }
+
 
 # -------------------------
 # Bastion Security Group
