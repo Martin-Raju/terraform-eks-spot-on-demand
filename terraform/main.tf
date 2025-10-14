@@ -22,6 +22,7 @@ provider "kubernetes" {
     command     = "aws"
     args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
   }
+  depends_on = [module.eks, time_sleep.wait_for_eks]
 }
 
 provider "helm" {
@@ -198,7 +199,7 @@ resource "time_sleep" "wait_for_eks" {
   depends_on = [module.eks]
 
   # 60s is typically enough; increase if your CI is slow
-  create_duration = "90s"
+  create_duration = "180s"
 }
 
 # -------------------------
