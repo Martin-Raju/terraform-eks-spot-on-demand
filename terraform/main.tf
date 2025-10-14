@@ -240,6 +240,7 @@ resource "helm_release" "karpenter" {
 ##################################
 
 resource "kubernetes_manifest" "karpenter_provisioner" {
+  provider = kubernetes.eks
   manifest = {
     apiVersion = "karpenter.sh/v1alpha5"
     kind       = "Provisioner"
