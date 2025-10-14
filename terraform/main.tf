@@ -13,8 +13,9 @@ provider "aws" {
 }
 
 provider "kubernetes" {
-  alias                  = "eks"
-  host                   = module.eks.cluster_endpoint
+  alias = "eks"
+  #host                   = module.eks.cluster_endpoint
+  host                   = coalesce(module.eks.cluster_endpoint, "https://not-yet-known")
   cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
 
   exec {
@@ -26,7 +27,8 @@ provider "kubernetes" {
 
 provider "helm" {
   kubernetes = {
-    host                   = module.eks.cluster_endpoint
+    #host                   = module.eks.cluster_endpoint
+    host                   = coalesce(module.eks.cluster_endpoint, "https://not-yet-known")
     cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
 
     exec = {
@@ -211,7 +213,7 @@ resource "helm_release" "karpenter" {
   depends_on = [
     module.eks,
     module.karpenter,
-    time_sleep.wait_for_eks 
+    time_sleep.wait_for_eks
   ]
   namespace           = "kube-system"
   name                = "karpenter"
@@ -264,9 +266,9 @@ resource "kubernetes_manifest" "karpenter_nodeclass" {
     }
   }
   depends_on = [
-helm_release.karpenter,
-time_sleep.wait_for_eks 
-]
+    helm_release.karpenter,
+    time_sleep.wait_for_eks
+  ]
 }
 
 ##################################
