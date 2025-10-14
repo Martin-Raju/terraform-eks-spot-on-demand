@@ -15,7 +15,7 @@ provider "aws" {
 provider "kubernetes" {
   alias = "eks"
   #host                   = module.eks.cluster_endpoint
-  host                   = coalesce(module.eks.cluster_endpoint, "https://not-yet-known")
+  host = tolist([coalesce(module.eks.cluster_endpoint, "https://not-yet-known")])[0]
   #cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
   cluster_ca_certificate = base64decode(coalesce(module.eks.cluster_certificate_authority_data, "IA=="))
 
@@ -30,7 +30,7 @@ provider "kubernetes" {
 provider "helm" {
   kubernetes = {
     #host                   = module.eks.cluster_endpoint
-    host                   = coalesce(module.eks.cluster_endpoint, "https://not-yet-known")
+    host = tolist([coalesce(module.eks.cluster_endpoint, "https://not-yet-known")])[0]
     #cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
     cluster_ca_certificate = base64decode(coalesce(module.eks.cluster_certificate_authority_data, "IA=="))
 
