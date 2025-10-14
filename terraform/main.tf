@@ -13,32 +13,26 @@ provider "aws" {
 }
 
 provider "kubernetes" {
-  alias = "eks"
-  #host                   = module.eks.cluster_endpoint
-  host = tolist([coalesce(module.eks.cluster_endpoint, "https://not-yet-known")])[0]
-  #cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
-  cluster_ca_certificate = base64decode(coalesce(module.eks.cluster_certificate_authority_data, "IA=="))
+  alias                  = "eks"
+  host                   = module.eks.cluster_endpoint
+  cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
 
   exec {
     api_version = "client.authentication.k8s.io/v1beta1"
     command     = "aws"
-    #args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
-    args        = ["eks", "get-token", "--cluster-name", coalesce(module.eks.cluster_name, "not-yet-created")]
+    args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
   }
 }
 
 provider "helm" {
   kubernetes = {
-    #host                   = module.eks.cluster_endpoint
-    host = tolist([coalesce(module.eks.cluster_endpoint, "https://not-yet-known")])[0]
-    #cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
-    cluster_ca_certificate = base64decode(coalesce(module.eks.cluster_certificate_authority_data, "IA=="))
+    host                   = module.eks.cluster_endpoint
+    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
 
     exec = {
       api_version = "client.authentication.k8s.io/v1beta1"
       command     = "aws"
-      #args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
-      args        = ["eks", "get-token", "--cluster-name", coalesce(module.eks.cluster_name, "not-yet-created")]
+      args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
     }
   }
 }
@@ -240,99 +234,6 @@ resource "helm_release" "karpenter" {
     webhook:
       enabled: false
     EOT
-  ]
-}
-##################################
-#karpenter_nodeclass
-##################################
-
-resource "kubernetes_manifest" "karpenter_nodeclass" {
-  provider = kubernetes.eks
-  manifest = {
-    apiVersion = "karpenter.k8s.aws/v1"
-    kind       = "EC2NodeClass"
-    metadata = {
-      name = "default"
-    }
-    spec = {
-      amiSelectorTerms = [{ alias = "al2@latest" }]
-      role             = "${var.cluster_name}-karpenter"
-      subnetSelectorTerms = [{
-        tags = {
-          "karpenter.sh/discovery" = var.cluster_name
-        }
-      }]
-      securityGroupSelectorTerms = [{
-        tags = {
-          "karpenter.sh/discovery" = var.cluster_name
-        }
-      }]
-    }
-  }
-  depends_on = [
-    helm_release.karpenter,
-    time_sleep.wait_for_eks
-  ]
-}
-
-##################################
-#karpenter_nodepool
-##################################
-
-resource "kubernetes_manifest" "karpenter_nodepool" {
-  provider = kubernetes.eks
-  manifest = {
-    apiVersion = "karpenter.sh/v1"
-    kind       = "NodePool"
-    metadata = {
-      name = "default"
-    }
-    spec = {
-      template = {
-        spec = {
-          nodeClassRef = {
-            group = "karpenter.k8s.aws"
-            kind  = "EC2NodeClass"
-            name  = "default"
-          }
-          requirements = [
-            {
-              key      = "karpenter.k8s.aws/instance-category"
-              operator = "In"
-              values   = ["t", "m", "c", "r"]
-            },
-            {
-              key      = "karpenter.k8s.aws/instance-hypervisor"
-              operator = "In"
-              values   = ["nitro"]
-            },
-            {
-              key      = "karpenter.k8s.aws/instance-cpu"
-              operator = "In"
-              values   = ["2", "4", "8", "16"]
-            },
-            {
-              key      = "karpenter.k8s.aws/capacity-type"
-              operator = "In"
-              values   = ["spot"]
-            },
-            {
-              key      = "kubernetes.io/os"
-              operator = "In"
-              values   = ["linux"]
-            }
-          ]
-        }
-      }
-      limits = {
-        cpu = 1000
-      }
-    }
-  }
-  depends_on = [
-    kubernetes_manifest.karpenter_nodeclass,
-    helm_release.karpenter,
-    time_sleep.wait_for_eks
   ]
 }
 
