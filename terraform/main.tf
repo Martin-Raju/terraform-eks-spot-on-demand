@@ -208,7 +208,7 @@ resource "kubernetes_namespace" "karpenter" {
   metadata {
     name = "karpenter"
   }
-  depends_on = [module.eks,time_sleep.wait_for_eks]
+  depends_on = [module.eks, time_sleep.wait_for_eks]
   provider   = kubernetes.eks
 }
 
@@ -216,7 +216,6 @@ resource "helm_release" "karpenter" {
   count               = var.eks_public_access_enabled ? 1 : 0
   name                = "karpenter"
   provider            = helm
-  depends_on          = [module.eks, module.karpenter]
   namespace           = "karpenter"
   repository          = "oci://public.ecr.aws/karpenter"
   repository_username = data.aws_ecrpublic_authorization_token.token.user_name
