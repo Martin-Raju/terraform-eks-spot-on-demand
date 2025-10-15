@@ -182,6 +182,8 @@ module "karpenter" {
   # Name needs to match role name passed to the EC2NodeClass
   node_iam_role_use_name_prefix   = false
   node_iam_role_name              = "${var.cluster_name}-karpenter"
+  enable_v1_permissions           = true
+  enable_pod_identity             = true
   create_pod_identity_association = true
 
   # Attach additional IAM policies to the Karpenter node IAM role
@@ -214,10 +216,10 @@ resource "kubernetes_namespace" "karpenter" {
 
 resource "helm_release" "karpenter" {
   count               = var.eks_public_access_enabled ? 1 : 0
-  name                = "${module.label.environment}-karpenter"
+  name                = "karpenter"
   provider            = helm
   depends_on          = [module.eks, module.karpenter]
-  namespace           = kubernetes_namespace.karpenter.metadata[0].name
+  namespace           = "karpenter"
   repository          = "oci://public.ecr.aws/karpenter"
   repository_username = data.aws_ecrpublic_authorization_token.token.user_name
   repository_password = data.aws_ecrpublic_authorization_token.token.password
@@ -226,28 +228,19 @@ resource "helm_release" "karpenter" {
   wait                = false
 
   values = [
-    yamlencode({
-      # Ensure Karpenter controller schedules to the nodegroup labelled above
-      nodeSelector = {
-        "karpenter.sh/controller" = "true"
-      }
-      dnsPolicy = "Default"
-      serviceAccount = {
-        create = false
-        name   = "karpenter" # service account name (the IAM role is associated via IRSA/your karpenter module)
-      }
-      settings = {
-        clusterName       = module.eks.cluster_name
-        clusterEndpoint   = module.eks.cluster_endpoint
-        interruptionQueue = module.karpenter.queue_name
-      }
-      webhook = {
-        enabled = false
-      }
-    })
+    <<-EOT
+    nodeSelector:
+      karpenter.sh/controller: 'true'
+    dnsPolicy: Default
+    settings:
+      clusterName: ${module.eks.cluster_name}
+      clusterEndpoint: ${module.eks.cluster_endpoint}
+      interruptionQueue: ${module.karpenter.queue_name}
+    webhook:
+      enabled: false
+    EOT
   ]
 }
-
 
 # -------------------------
 # Bastion Security Group
