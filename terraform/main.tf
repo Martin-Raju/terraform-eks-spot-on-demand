@@ -18,7 +18,7 @@ provider "kubernetes" {
   cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
 
   exec {
-    api_version = "client.authentication.k8s.io/v1beta1"
+    api_version = "client.authentication.k8s.io/v1"
     command     = "aws"
     args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
   }
@@ -30,7 +30,7 @@ provider "helm" {
     cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
 
     exec = {
-      api_version = "client.authentication.k8s.io/v1beta1"
+      api_version = "client.authentication.k8s.io/v1"
       command     = "aws"
       args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
     }
@@ -198,7 +198,7 @@ resource "time_sleep" "wait_for_eks" {
   depends_on = [module.eks]
 
   # 60s is typically enough; increase if your CI is slow
-  create_duration = "180s"
+  create_duration = "300s"
 }
 
 # -------------------------
@@ -208,7 +208,7 @@ resource "kubernetes_namespace" "karpenter" {
   metadata {
     name = "karpenter"
   }
-  depends_on = [module.eks]
+  depends_on = [module.eks,time_sleep.wait_for_eks]
   provider   = kubernetes.eks
 }
 
@@ -238,6 +238,7 @@ resource "helm_release" "karpenter" {
       enabled: false
     EOT
   ]
+  depends_on = [kubernetes_namespace.karpenter, module.karpenter]
 }
 
 # -------------------------
