@@ -148,7 +148,7 @@ module "eks" {
   eks_managed_node_groups = {
     karpenter = {
       ami_type       = "AL2023_x86_64_STANDARD"
-      instance_types = ["t3.small", "t3.medium"]
+      instance_types = ["t3.small"]
       capacity_type  = "SPOT"
       min_size       = 1
       max_size       = 3
@@ -156,7 +156,7 @@ module "eks" {
 
       labels = {
         # Used to ensure Karpenter runs on nodes that it does not manage
-        "karpenter.sh/controller" = "true"
+        "karpenter.sh/controller" = "false"
       }
     }
   }
