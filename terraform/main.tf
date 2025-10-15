@@ -204,17 +204,25 @@ resource "time_sleep" "wait_for_eks" {
 # -------------------------
 # Karpenter Helm Release
 # -------------------------
+resource "kubernetes_namespace" "karpenter" {
+  metadata {
+    name = "karpenter"
+  }
+  depends_on = [module.eks]
+}
+
 resource "helm_release" "karpenter" {
   count               = var.eks_public_access_enabled ? 1 : 0
   name                = "${module.label.environment}-karpenter"
   provider            = helm
   depends_on          = [module.eks, module.karpenter, time_sleep.wait_for_eks]
+  namespace           = kubernetes_namespace.karpenter.metadata[0].name
   repository          = "oci://public.ecr.aws/karpenter"
   repository_username = data.aws_ecrpublic_authorization_token.token.user_name
   repository_password = data.aws_ecrpublic_authorization_token.token.password
   chart               = "karpenter"
   version             = "1.6.0"
-  wait                = false
+  wait                = true
 
   values = [
     <<-EOT
