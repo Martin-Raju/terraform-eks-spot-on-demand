@@ -18,7 +18,7 @@ provider "kubernetes" {
   cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
 
   exec {
-    api_version = "client.authentication.k8s.io/v1"
+    api_version = "client.authentication.k8s.io/v1beta1"
     command     = "aws"
     args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
   }
@@ -30,7 +30,7 @@ provider "helm" {
     cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
 
     exec = {
-      api_version = "client.authentication.k8s.io/v1"
+      api_version = "client.authentication.k8s.io/v1beta1"
       command     = "aws"
       args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
     }
@@ -209,21 +209,21 @@ resource "kubernetes_namespace" "karpenter" {
     name = "karpenter"
   }
   depends_on = [module.eks]
-  provider = kubernetes.eks
+  provider   = kubernetes.eks
 }
 
 resource "helm_release" "karpenter" {
   count               = var.eks_public_access_enabled ? 1 : 0
   name                = "${module.label.environment}-karpenter"
   provider            = helm
-  depends_on          = [module.eks, module.karpenter, time_sleep.wait_for_eks]
+  depends_on          = [module.eks, module.karpenter]
   namespace           = kubernetes_namespace.karpenter.metadata[0].name
   repository          = "oci://public.ecr.aws/karpenter"
   repository_username = data.aws_ecrpublic_authorization_token.token.user_name
   repository_password = data.aws_ecrpublic_authorization_token.token.password
   chart               = "karpenter"
   version             = "1.6.0"
-  wait                = true
+  wait                = false
 
   values = [
     <<-EOT
