@@ -22,15 +22,16 @@ jobs:
           terraform_version: 1.6.0
 
       - name: Clean .terraform directory
+        working-directory: ./terraform
         run: |
           echo "Cleaning existing .terraform directory..."
           rm -rf .terraform .terraform.lock.hcl
           echo "Cleanup complete."
 
-      - name: Clean .terraform directory
+      - name: Remove broken SG egress rule from state
+        working-directory: ./terraform
         run: terraform state rm 'module.bastion_ec2.aws_vpc_security_group_egress_rule.this["ipv6_default"]'
 
- 
       - name: Terraform Init
         working-directory: ./terraform
         run: terraform init -input=false
