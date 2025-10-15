@@ -193,51 +193,51 @@ module "karpenter" {
 # -------------------------
 # Wait for EKS API to settle 
 # -------------------------
-resource "time_sleep" "wait_for_eks" {
-  # depends on the EKS module finishing
-  depends_on = [module.eks]
+# resource "time_sleep" "wait_for_eks" {
+  # # depends on the EKS module finishing
+  # depends_on = [module.eks]
 
-  # 60s is typically enough; increase if your CI is slow
-  create_duration = "180s"
-}
+  # # 60s is typically enough; increase if your CI is slow
+  # create_duration = "180s"
+# }
 
 # -------------------------
 # Karpenter Helm Release
 # -------------------------
 
-resource "helm_release" "karpenter" {
-  count    = var.eks_public_access_enabled ? 1 : 0
-  provider = helm
-  depends_on = [
-    module.eks,
-    module.karpenter,
-    time_sleep.wait_for_eks
-  ]
-  namespace           = "kube-system"
-  name                = "karpenter"
-  repository          = "oci://public.ecr.aws/karpenter"
-  repository_username = data.aws_ecrpublic_authorization_token.token.user_name
-  repository_password = data.aws_ecrpublic_authorization_token.token.password
-  chart               = "karpenter"
-  version             = "1.6.0"
-  skip_crds           = false
-  create_namespace    = true
-  wait                = true
+# resource "helm_release" "karpenter" {
+  # count    = var.eks_public_access_enabled ? 1 : 0
+  # provider = helm
+  # depends_on = [
+    # module.eks,
+    # module.karpenter,
+    # time_sleep.wait_for_eks
+  # ]
+  # namespace           = "kube-system"
+  # name                = "karpenter"
+  # repository          = "oci://public.ecr.aws/karpenter"
+  # repository_username = data.aws_ecrpublic_authorization_token.token.user_name
+  # repository_password = data.aws_ecrpublic_authorization_token.token.password
+  # chart               = "karpenter"
+  # version             = "1.6.0"
+  # skip_crds           = false
+  # create_namespace    = true
+  # wait                = true
 
-  values = [
-    <<-EOT
-    nodeSelector:
-      karpenter.sh/controller: 'true'
-    dnsPolicy: Default
-    settings:
-      clusterName: ${module.eks.cluster_name}
-      clusterEndpoint: ${module.eks.cluster_endpoint}
-      interruptionQueue: ${module.karpenter.queue_name}
-    webhook:
-      enabled: false
-    EOT
-  ]
-}
+  # values = [
+    # <<-EOT
+    # nodeSelector:
+      # karpenter.sh/controller: 'true'
+    # dnsPolicy: Default
+    # settings:
+      # clusterName: ${module.eks.cluster_name}
+      # clusterEndpoint: ${module.eks.cluster_endpoint}
+      # interruptionQueue: ${module.karpenter.queue_name}
+    # webhook:
+      # enabled: false
+    # EOT
+  # ]
+# }
 
 ###############################################################################
 # Karpenter Kubectl
