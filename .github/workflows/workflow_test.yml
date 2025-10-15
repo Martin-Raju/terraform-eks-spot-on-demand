@@ -25,7 +25,11 @@ jobs:
         run: |
           echo "Cleaning existing .terraform directory..."
           rm -rf .terraform .terraform.lock.hcl
-          echo "Cleanup complete."          
+          echo "Cleanup complete."
+
+      - name: Clean .terraform directory
+        run: terraform state rm 'module.bastion_ec2.aws_vpc_security_group_egress_rule.this["ipv6_default"]'
+
  
       - name: Terraform Init
         working-directory: ./terraform
