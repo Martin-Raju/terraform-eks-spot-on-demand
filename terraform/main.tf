@@ -156,7 +156,7 @@ module "eks" {
 
       labels = {
         # Used to ensure Karpenter runs on nodes that it does not manage
-        "karpenter.sh/controller" = "false"
+        "karpenter.sh/controller" = "true"
       }
     }
   }
@@ -227,21 +227,15 @@ resource "helm_release" "karpenter" {
 
   values = [
     <<-EOT
-    serviceAccount:
-      create: false
-      name: "${module.karpenter.node_iam_role_name}"
+    nodeSelector:
+      karpenter.sh/controller: 'true'
+    dnsPolicy: Default
     settings:
       clusterName: ${module.eks.cluster_name}
       clusterEndpoint: ${module.eks.cluster_endpoint}
       interruptionQueue: ${module.karpenter.queue_name}
-    resources:
-      constraints:
-        instanceTypes: ["t3.small","t3.medium"]
-        capacityTypes: ["spot","on-demand"]
-      subnets:
-        - ${join("\n        - ", module.vpc.private_subnets)}
-      securityGroups:
-        - ${join("\n        - ", [module.eks.cluster_security_group_id])}
+    webhook:
+      enabled: false
     EOT
   ]
 }
