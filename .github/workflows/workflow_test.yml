@@ -21,11 +21,11 @@ jobs:
         with:
           terraform_version: 1.6.0
 
-      #- name: Clean .terraform directory
-      #  run: |
-      #    echo "Cleaning existing .terraform directory..."
-      #    rm -rf .terraform .terraform.lock.hcl
-      #    echo "Cleanup complete."          
+      - name: Clean .terraform directory
+        run: |
+          echo "Cleaning existing .terraform directory..."
+          rm -rf .terraform .terraform.lock.hcl
+          echo "Cleanup complete."          
  
       - name: Terraform Init
         working-directory: ./terraform
