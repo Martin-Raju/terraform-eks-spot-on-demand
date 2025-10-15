@@ -226,17 +226,25 @@ resource "helm_release" "karpenter" {
   wait                = false
 
   values = [
-    <<-EOT
-    nodeSelector:
-      karpenter.sh/controller: 'true'
-    dnsPolicy: Default
-    settings:
-      clusterName: ${module.eks.cluster_name}
-      clusterEndpoint: ${module.eks.cluster_endpoint}
-      interruptionQueue: ${module.karpenter.queue_name}
-    webhook:
-      enabled: false
-    EOT
+    yamlencode({
+      # Ensure Karpenter controller schedules to the nodegroup labelled above
+      nodeSelector = {
+        "karpenter.sh/controller" = "true"
+      }
+      dnsPolicy = "Default"
+      serviceAccount = {
+        create = false
+        name   = "karpenter" # service account name (the IAM role is associated via IRSA/your karpenter module)
+      }
+      settings = {
+        clusterName       = module.eks.cluster_name
+        clusterEndpoint   = module.eks.cluster_endpoint
+        interruptionQueue = module.karpenter.queue_name
+      }
+      webhook = {
+        enabled = false
+      }
+    })
   ]
 }
 
