@@ -183,7 +183,7 @@ module "karpenter" {
   node_iam_role_use_name_prefix   = false
   #node_iam_role_name              = "${var.cluster_name}-karpenter"
   enable_v1_permissions           = true
-  enable_pod_identity             = true
+  #enable_pod_identity             = true
   create_pod_identity_association = true
 
   # Attach additional IAM policies to the Karpenter node IAM role
