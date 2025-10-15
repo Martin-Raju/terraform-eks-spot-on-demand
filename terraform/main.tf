@@ -18,7 +18,7 @@ provider "kubernetes" {
   cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
 
   exec {
-    api_version = "client.authentication.k8s.io/v1"
+    api_version = "client.authentication.k8s.io/v1beta1"
     command     = "aws"
     args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
   }
@@ -30,7 +30,7 @@ provider "helm" {
     cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
 
     exec = {
-      api_version = "client.authentication.k8s.io/v1"
+      api_version = "client.authentication.k8s.io/v1beta1"
       command     = "aws"
       args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
     }
@@ -67,7 +67,7 @@ data "aws_ecrpublic_authorization_token" "token" {
 # -------------------------
 
 module "label" {
-  source      = "./modules/terraform-null-label-0.24.0"
+  source      = "./modules/terraform-null-label-0.25.0"
   name        = var.cluster_name
   environment = var.environment
 }
@@ -148,7 +148,7 @@ module "eks" {
   eks_managed_node_groups = {
     karpenter = {
       ami_type       = "AL2023_x86_64_STANDARD"
-      instance_types = ["t3.small"]
+      instance_types = ["t3.small", "t3.medium"]
       capacity_type  = "SPOT"
       min_size       = 1
       max_size       = 3
@@ -198,31 +198,38 @@ resource "time_sleep" "wait_for_eks" {
   depends_on = [module.eks]
 
   # 60s is typically enough; increase if your CI is slow
-  create_duration = "300s"
+  create_duration = "180s"
 }
 
 # -------------------------
 # Karpenter Helm Release
 # -------------------------
-resource "kubernetes_namespace" "karpenter" {
-  metadata {
-    name = "karpenter"
-  }
-  depends_on = [module.eks, time_sleep.wait_for_eks]
-  provider   = kubernetes.eks
-}
+#resource "kubernetes_namespace" "karpenter" {
+#  metadata {
+#    name = "karpenter"
+#  }
+#  depends_on = [module.eks, time_sleep.wait_for_eks]
+#  provider   = kubernetes.eks
+#}
 
 resource "helm_release" "karpenter" {
-  count               = var.eks_public_access_enabled ? 1 : 0
+  count = var.eks_public_access_enabled ? 1 : 0
+  depends_on = [
+    module.eks,
+    module.karpenter,
+    time_sleep.wait_for_eks
+  ]
   name                = "karpenter"
   provider            = helm
-  namespace           = "karpenter"
   repository          = "oci://public.ecr.aws/karpenter"
   repository_username = data.aws_ecrpublic_authorization_token.token.user_name
   repository_password = data.aws_ecrpublic_authorization_token.token.password
   chart               = "karpenter"
   version             = "1.6.0"
-  wait                = false
+  skip_crds           = false
+  create_namespace    = true
+  namespace           = "karpenter"
+  wait                = true
 
   values = [
     <<-EOT
@@ -237,7 +244,6 @@ resource "helm_release" "karpenter" {
       enabled: false
     EOT
   ]
-  depends_on = [kubernetes_namespace.karpenter, module.karpenter]
 }
 
 # -------------------------
