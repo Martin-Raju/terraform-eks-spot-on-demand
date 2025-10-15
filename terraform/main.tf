@@ -9,7 +9,7 @@ provider "aws" {
 
 provider "aws" {
   alias  = "virginia"
-  region = "us-east-1"
+  region = "us-east-2"
 }
 
 provider "kubernetes" {
