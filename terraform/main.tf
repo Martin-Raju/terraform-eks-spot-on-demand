@@ -67,7 +67,7 @@ data "aws_ecrpublic_authorization_token" "token" {
 # -------------------------
 
 module "label" {
-  source      = "./modules/terraform-null-label-0.25.0"
+  source      = "./modules/terraform-null-label-0.24.0"
   name        = var.cluster_name
   environment = var.environment
 }
