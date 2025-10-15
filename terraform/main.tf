@@ -209,6 +209,7 @@ resource "kubernetes_namespace" "karpenter" {
     name = "karpenter"
   }
   depends_on = [module.eks]
+  provider = kubernetes.eks
 }
 
 resource "helm_release" "karpenter" {
