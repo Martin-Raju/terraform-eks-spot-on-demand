@@ -1,6 +1,6 @@
 kubernetes_version        = "1.33"
 vpc_cidr                  = "10.0.0.0/16"
-aws_region                = "us-east-2"
+aws_region                = "us-east-1"
 cluster_name              = "eks-poc-cluster"
 environment               = "test01"
 bucket_name               = "poc-tfstate-bucket-0123456"
