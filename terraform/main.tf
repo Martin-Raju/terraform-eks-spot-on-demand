@@ -227,14 +227,12 @@ resource "helm_release" "karpenter" {
   values = [
     <<-EOT
  nodeSelector:
- karpenter.sh/controller: 'true'
+   karpenter.sh/controller: 'true'
  dnsPolicy: Default
  settings:
- clusterName: ${module.eks.cluster_name}
- clusterEndpoint: ${module.eks.cluster_endpoint}
- interruptionQueue: ${module.karpenter.queue_name}
- featureGates:
-    ReservedCapacity: true
+   clusterName: ${module.eks.cluster_name}
+   clusterEndpoint: ${module.eks.cluster_endpoint}
+   interruptionQueue: ${module.karpenter.queue_name}
  webhook:
  enabled: false
  EOT
