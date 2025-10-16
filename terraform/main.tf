@@ -261,7 +261,7 @@ resource "time_sleep" "wait_for_karpenter_crd" {
     helm_release.karpenter
   ]
   # A short delay to allow the 'Provisioner' CRD to become available to the K8s API
-  create_duration = "15s" 
+  create_duration = "15s"
 }
 
 # -------------------------
