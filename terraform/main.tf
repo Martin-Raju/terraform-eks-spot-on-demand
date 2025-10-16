@@ -279,7 +279,7 @@ resource "kubectl_manifest" "karpenter_node_pool" {
 }
 
 resource "kubectl_manifest" "karpenter_node_class" {
-  provider = kubernetes.karpenter
+  provider  = kubernetes.karpenter
   yaml_body = <<-YAML
     apiVersion: karpenter.k8s.aws/v1beta1
     kind: EC2NodeClass
