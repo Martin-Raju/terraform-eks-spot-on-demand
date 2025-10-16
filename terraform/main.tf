@@ -253,65 +253,44 @@ resource "helm_release" "karpenter" {
   ]
 }
 
-###############################################################################
-# Karpenter Kubectl
-###############################################################################
-resource "kubectl_manifest" "karpenter_node_pool" {
+# -------------------------
+# Karpenter Provisioner
+# -------------------------
+resource "kubectl_manifest" "karpenter_provisioner" {
   provider  = kubectl.karpenter
   yaml_body = <<-YAML
-    apiVersion: karpenter.sh/v1beta1
-    kind: NodePool
-    metadata:
-      name: default
-    spec:
-      template:
-        spec:
-          nodeClassRef:
-            name: default
-          requirements:
-            - key: "karpenter.k8s.aws/instance-category"
-              operator: In
-              values: ["c", "m", "r"]
-            - key: "karpenter.k8s.aws/instance-cpu"
-              operator: In
-              values: ["4", "8", "16", "32"]
-            - key: "karpenter.k8s.aws/instance-hypervisor"
-              operator: In
-              values: ["nitro"]
-            - key: "karpenter.k8s.aws/instance-generation"
-              operator: Gt
-              values: ["2"]
-      limits:
-        cpu: 1000
-      disruption:
-        consolidationPolicy: WhenEmpty
-        consolidateAfter: 30s
-  YAML
-
-  depends_on = [
-    kubectl_manifest.karpenter_node_class
-  ]
-}
-
-resource "kubectl_manifest" "karpenter_node_class" {
-  provider  = kubectl.karpenter
-  yaml_body = <<-YAML
-    apiVersion: karpenter.k8s.aws/v1beta1
-    kind: EC2NodeClass
-    metadata:
-      name: default
-    spec:
-      amiFamily: AL2023
-      role: ${module.karpenter.node_iam_role_name}
-      subnetSelectorTerms:
-        - tags:
-            karpenter.sh/discovery: ${module.eks.cluster_name}
-      securityGroupSelectorTerms:
-        - tags:
-            karpenter.sh/discovery: ${module.eks.cluster_name}
-      tags:
-        karpenter.sh/discovery: ${module.eks.cluster_name}
-  YAML
+apiVersion: karpenter.sh/v1alpha5
+kind: Provisioner
+metadata:
+  name: default
+spec:
+  requirements:
+    - key: "karpenter.k8s.aws/instance-category"
+      operator: In
+      values: ["c", "m", "r"]
+    - key: "karpenter.k8s.aws/instance-cpu"
+      operator: In
+      values: ["4", "8", "16", "32"]
+    - key: "karpenter.k8s.aws/instance-hypervisor"
+      operator: In
+      values: ["nitro"]
+    - key: "karpenter.k8s.aws/instance-generation"
+      operator: Gt
+      values: ["2"]
+  limits:
+    cpu: 1000
+  consolidation:
+    enabled: true
+    ttlSecondsAfterEmpty: 30
+  provider:
+    subnetSelector:
+      karpenter.sh/discovery: ${module.eks.cluster_name}
+    securityGroupSelector:
+      karpenter.sh/discovery: ${module.eks.cluster_name}
+  ttlSecondsUntilExpired: 259200
+  yamlAnnotations:
+    cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
+YAML
 
   depends_on = [
     helm_release.karpenter
