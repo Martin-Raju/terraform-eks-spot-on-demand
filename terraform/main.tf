@@ -302,7 +302,6 @@ resource "kubectl_manifest" "karpenter_node_class" {
   ]
 }
 
-
 # -------------------------
 # Bastion Security Group
 # -------------------------
