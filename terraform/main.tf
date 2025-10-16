@@ -193,13 +193,13 @@ module "karpenter" {
 # -------------------------
 # Wait for EKS API to settle 
 # -------------------------
-# resource "time_sleep" "wait_for_eks" {
-# # depends on the EKS module finishing
-# depends_on = [module.eks]
+resource "time_sleep" "wait_for_eks" {
+  # depends on the EKS module finishing
+  depends_on = [module.eks]
 
-# # 60s is typically enough; increase if your CI is slow
-# create_duration = "180s"
-# }
+  # 60s is typically enough; increase if your CI is slow
+  create_duration = "60s"
+}
 
 # -------------------------
 # Karpenter Helm Release
