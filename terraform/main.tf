@@ -194,112 +194,112 @@ module "karpenter" {
 # Wait for EKS API to settle 
 # -------------------------
 # resource "time_sleep" "wait_for_eks" {
-  # # depends on the EKS module finishing
-  # depends_on = [module.eks]
+# # depends on the EKS module finishing
+# depends_on = [module.eks]
 
-  # # 60s is typically enough; increase if your CI is slow
-  # create_duration = "180s"
+# # 60s is typically enough; increase if your CI is slow
+# create_duration = "180s"
 # }
 
 # -------------------------
 # Karpenter Helm Release
 # -------------------------
 
-# resource "helm_release" "karpenter" {
-  # count    = var.eks_public_access_enabled ? 1 : 0
-  # provider = helm
-  # depends_on = [
-    # module.eks,
-    # module.karpenter,
-    # time_sleep.wait_for_eks
-  # ]
-  # namespace           = "kube-system"
-  # name                = "karpenter"
-  # repository          = "oci://public.ecr.aws/karpenter"
-  # repository_username = data.aws_ecrpublic_authorization_token.token.user_name
-  # repository_password = data.aws_ecrpublic_authorization_token.token.password
-  # chart               = "karpenter"
-  # version             = "1.6.0"
-  # skip_crds           = false
-  # create_namespace    = true
-  # wait                = true
+resource "helm_release" "karpenter" {
+  count    = var.eks_public_access_enabled ? 1 : 0
+  provider = helm
+  depends_on = [
+    module.eks,
+    module.karpenter,
+    time_sleep.wait_for_eks
+  ]
+  namespace           = "kube-system"
+  name                = "karpenter"
+  repository          = "oci://public.ecr.aws/karpenter"
+  repository_username = data.aws_ecrpublic_authorization_token.token.user_name
+  repository_password = data.aws_ecrpublic_authorization_token.token.password
+  chart               = "karpenter"
+  version             = "1.6.0"
+  skip_crds           = false
+  create_namespace    = true
+  wait                = true
 
-  # values = [
-    # <<-EOT
-    # nodeSelector:
-      # karpenter.sh/controller: 'true'
-    # dnsPolicy: Default
-    # settings:
-      # clusterName: ${module.eks.cluster_name}
-      # clusterEndpoint: ${module.eks.cluster_endpoint}
-      # interruptionQueue: ${module.karpenter.queue_name}
-    # webhook:
-      # enabled: false
-    # EOT
-  # ]
-# }
+  values = [
+    <<-EOT
+ nodeSelector:
+ karpenter.sh/controller: 'true'
+ dnsPolicy: Default
+ settings:
+ clusterName: ${module.eks.cluster_name}
+ clusterEndpoint: ${module.eks.cluster_endpoint}
+ interruptionQueue: ${module.karpenter.queue_name}
+ webhook:
+ enabled: false
+ EOT
+  ]
+}
 
 ###############################################################################
 # Karpenter Kubectl
 ###############################################################################
 # resource "kubectl_manifest" "karpenter_node_pool" {
-  # yaml_body = <<-YAML
-    # apiVersion: karpenter.sh/v1beta1
-    # kind: NodePool
-    # metadata:
-      # name: default
-    # spec:
-      # template:
-        # spec:
-          # nodeClassRef:
-            # name: default
-          # requirements:
-            # - key: "karpenter.k8s.aws/instance-category"
-              # operator: In
-              # values: ["c", "m", "r"]
-            # - key: "karpenter.k8s.aws/instance-cpu"
-              # operator: In
-              # values: ["4", "8", "16", "32"]
-            # - key: "karpenter.k8s.aws/instance-hypervisor"
-              # operator: In
-              # values: ["nitro"]
-            # - key: "karpenter.k8s.aws/instance-generation"
-              # operator: Gt
-              # values: ["2"]
-      # limits:
-        # cpu: 1000
-      # disruption:
-        # consolidationPolicy: WhenEmpty
-        # consolidateAfter: 30s
-  # YAML
+# yaml_body = <<-YAML
+# apiVersion: karpenter.sh/v1beta1
+# kind: NodePool
+# metadata:
+# name: default
+# spec:
+# template:
+# spec:
+# nodeClassRef:
+# name: default
+# requirements:
+# - key: "karpenter.k8s.aws/instance-category"
+# operator: In
+# values: ["c", "m", "r"]
+# - key: "karpenter.k8s.aws/instance-cpu"
+# operator: In
+# values: ["4", "8", "16", "32"]
+# - key: "karpenter.k8s.aws/instance-hypervisor"
+# operator: In
+# values: ["nitro"]
+# - key: "karpenter.k8s.aws/instance-generation"
+# operator: Gt
+# values: ["2"]
+# limits:
+# cpu: 1000
+# disruption:
+# consolidationPolicy: WhenEmpty
+# consolidateAfter: 30s
+# YAML
 
-  # depends_on = [
-    # kubectl_manifest.karpenter_node_class
-  # ]
+# depends_on = [
+# kubectl_manifest.karpenter_node_class
+# ]
 # }
 
 # resource "kubectl_manifest" "karpenter_node_class" {
-  # yaml_body = <<-YAML
-    # apiVersion: karpenter.k8s.aws/v1beta1
-    # kind: EC2NodeClass
-    # metadata:
-      # name: default
-    # spec:
-      # amiFamily: AL2023
-      # role: ${module.karpenter.node_iam_role_name}
-      # subnetSelectorTerms:
-        # - tags:
-            # karpenter.sh/discovery: ${module.eks.cluster_name}
-      # securityGroupSelectorTerms:
-        # - tags:
-            # karpenter.sh/discovery: ${module.eks.cluster_name}
-      # tags:
-        # karpenter.sh/discovery: ${module.eks.cluster_name}
-  # YAML
+# yaml_body = <<-YAML
+# apiVersion: karpenter.k8s.aws/v1beta1
+# kind: EC2NodeClass
+# metadata:
+# name: default
+# spec:
+# amiFamily: AL2023
+# role: ${module.karpenter.node_iam_role_name}
+# subnetSelectorTerms:
+# - tags:
+# karpenter.sh/discovery: ${module.eks.cluster_name}
+# securityGroupSelectorTerms:
+# - tags:
+# karpenter.sh/discovery: ${module.eks.cluster_name}
+# tags:
+# karpenter.sh/discovery: ${module.eks.cluster_name}
+# YAML
 
-  # depends_on = [
-    # helm_release.karpenter
-  # ]
+# depends_on = [
+# helm_release.karpenter
+# ]
 # }
 
 
