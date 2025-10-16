@@ -194,11 +194,11 @@ module "karpenter" {
 # Wait for EKS API to settle 
 # -------------------------
 resource "time_sleep" "wait_for_eks" {
-  depends on the EKS module finishing
- depends_on = [module.eks]
+  #depends on the EKS module finishing
+  depends_on = [module.eks]
 
-  60s is typically enough; increase if your CI is slow
- create_duration = "60s"
+  #60s is typically enough; increase if your CI is slow
+  create_duration = "90s"
 }
 
 # -------------------------
@@ -209,9 +209,9 @@ resource "helm_release" "karpenter" {
   count    = var.eks_public_access_enabled ? 1 : 0
   provider = helm
   depends_on = [
-   module.eks,
-   module.karpenter,
-   time_sleep.wait_for_eks
+    module.eks,
+    module.karpenter,
+    time_sleep.wait_for_eks
   ]
   namespace           = "kube-system"
   name                = "karpenter"
@@ -225,7 +225,7 @@ resource "helm_release" "karpenter" {
   wait                = true
 
   values = [
-   <<-EOT
+    <<-EOT
  nodeSelector:
  karpenter.sh/controller: 'true'
  dnsPolicy: Default
