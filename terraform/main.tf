@@ -254,6 +254,17 @@ resource "helm_release" "karpenter" {
 }
 
 # -------------------------
+# Wait for Karpenter CRDs to register 🟢 ADDED FIX
+# -------------------------
+resource "time_sleep" "wait_for_karpenter_crd" {
+  depends_on = [
+    helm_release.karpenter
+  ]
+  # A short delay to allow the 'Provisioner' CRD to become available to the K8s API
+  create_duration = "15s" 
+}
+
+# -------------------------
 # Karpenter Provisioner
 # -------------------------
 resource "kubectl_manifest" "karpenter_provisioner" {
@@ -293,7 +304,8 @@ spec:
 YAML
 
   depends_on = [
-    helm_release.karpenter
+    helm_release.karpenter,
+    time_sleep.wait_for_karpenter_crd
   ]
 }
 
