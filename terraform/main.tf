@@ -13,7 +13,7 @@ provider "aws" {
 }
 
 provider "kubernetes" {
-  alias                  = "eks"
+
   host                   = module.eks.cluster_endpoint
   cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
 
@@ -22,6 +22,22 @@ provider "kubernetes" {
     command     = "aws"
     args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
   }
+  depends_on = [module.eks]
+}
+
+# Aliased provider for Karpenter manifests
+provider "kubernetes" {
+  alias                  = "karpenter"
+  host                   = module.eks.cluster_endpoint
+  cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+
+  exec {
+    api_version = "client.authentication.k8s.io/v1"
+    command     = "aws"
+    args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
+  }
+
+  depends_on = [module.eks, time_sleep.wait_for_eks]
 }
 
 provider "helm" {
@@ -243,6 +259,7 @@ resource "helm_release" "karpenter" {
 # Karpenter Kubectl
 ###############################################################################
 resource "kubectl_manifest" "karpenter_node_pool" {
+  provider  = kubernetes.karpenter
   yaml_body = <<-YAML
     apiVersion: karpenter.sh/v1beta1
     kind: NodePool
