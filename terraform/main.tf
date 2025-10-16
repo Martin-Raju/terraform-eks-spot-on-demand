@@ -259,7 +259,7 @@ resource "helm_release" "karpenter" {
 resource "kubectl_manifest" "karpenter_provisioner" {
   provider  = kubectl.karpenter
   yaml_body = <<-YAML
-apiVersion: karpenter.sh/v1alpha5
+apiVersion: karpenter.sh/v1beta1
 kind: Provisioner
 metadata:
   name: default
