@@ -25,19 +25,6 @@ provider "kubernetes" {
   }
 }
 
-provider "kubectl" {
-  alias                  = "karpenter"
-  host                   = module.eks.cluster_endpoint
-  cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
-
-  exec {
-    api_version = "client.authentication.k8s.io/v1"
-    command     = "aws"
-    args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
-  }
-
-}
-
 provider "helm" {
   kubernetes = {
     host                   = module.eks.cluster_endpoint
@@ -250,62 +237,6 @@ resource "helm_release" "karpenter" {
  webhook:
  enabled: false
  EOT
-  ]
-}
-
-# -------------------------
-# Wait for Karpenter CRDs to register 🟢 ADDED FIX
-# -------------------------
-resource "time_sleep" "wait_for_karpenter_crd" {
-  depends_on = [
-    helm_release.karpenter
-  ]
-  # A short delay to allow the 'Provisioner' CRD to become available to the K8s API
-  create_duration = "15s"
-}
-
-# -------------------------
-# Karpenter Provisioner
-# -------------------------
-resource "kubectl_manifest" "karpenter_provisioner" {
-  provider  = kubectl.karpenter
-  yaml_body = <<-YAML
-apiVersion: karpenter.sh/v1beta1
-kind: Provisioner
-metadata:
-  name: default
-spec:
-  requirements:
-    - key: "karpenter.k8s.aws/instance-category"
-      operator: In
-      values: ["c", "m", "r"]
-    - key: "karpenter.k8s.aws/instance-cpu"
-      operator: In
-      values: ["4", "8", "16", "32"]
-    - key: "karpenter.k8s.aws/instance-hypervisor"
-      operator: In
-      values: ["nitro"]
-    - key: "karpenter.k8s.aws/instance-generation"
-      operator: Gt
-      values: ["2"]
-  limits:
-    cpu: 1000
-  consolidation:
-    enabled: true
-    ttlSecondsAfterEmpty: 30
-  provider:
-    subnetSelector:
-      karpenter.sh/discovery: ${module.eks.cluster_name}
-    securityGroupSelector:
-      karpenter.sh/discovery: ${module.eks.cluster_name}
-  ttlSecondsUntilExpired: 259200
-  yamlAnnotations:
-    cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
-YAML
-
-  depends_on = [
-    helm_release.karpenter,
-    time_sleep.wait_for_karpenter_crd
   ]
 }
 
