@@ -71,6 +71,7 @@ module "label" {
   source      = "./modules/terraform-null-label-0.25.0"
   name        = var.cluster_name
   environment = var.environment
+  label_value_case = "lower"
 }
 
 # -------------------------
