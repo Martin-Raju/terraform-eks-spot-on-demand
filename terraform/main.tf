@@ -229,19 +229,19 @@ resource "helm_release" "karpenter" {
   ]
 }
 
-#resource "kubernetes_manifest" "karpenter_provisioner_crd" {
-#  provider   = kubernetes.eks
-#  depends_on = [helm_release.karpenter]
+resource "kubernetes_manifest" "karpenter_provisioner_crd" {
+  provider   = kubernetes.eks
+  depends_on = [helm_release.karpenter]
 
-#  manifest = yamldecode(file("K8s/karpenter/karpenter-provisioners-crd.yaml"))
-#}
+  manifest = yamldecode(file("K8s/karpenter/karpenter-provisioners-crd.yaml"))
+}
 
-#resource "kubernetes_manifest" "karpenter_provisioner" {
-#  provider   = kubernetes.eks
-#  depends_on = [helm_release.karpenter]
+resource "kubernetes_manifest" "karpenter_provisioner" {
+  provider   = kubernetes.eks
+  depends_on = [helm_release.karpenter]
 
-#  manifest = yamldecode(file("K8s/karpenter/karpenter-provisioners.yaml"))
-#}
+  manifest = yamldecode(file("K8s/karpenter/karpenter-provisioners.yaml"))
+}
 
 
 # -------------------------
