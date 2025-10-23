@@ -212,8 +212,7 @@ resource "helm_release" "karpenter" {
   provider = helm
   depends_on = [
     module.eks,
-    module.karpenter,
-    time_sleep.wait_for_eks
+    module.karpenter
   ]
   namespace           = "kube-system"
   name                = "karpenter"
