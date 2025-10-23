@@ -229,15 +229,13 @@ resource "helm_release" "karpenter" {
   ]
 }
 
-resource "null_resource" "karpenter_provisioner_crd" {
+resource "kubernetes_manifest" "karpenter_provisioner_crd" {
+  provider = kubernetes.eks
   depends_on = [helm_release.karpenter]
 
-  provisioner "local-exec" {
-    command = <<EOT
-      kubectl apply -f https://raw.githubusercontent.com/aws/karpenter-provider-aws/v0.16.2/charts/karpenter/crds/karpenter.sh_provisioners.yaml
-    EOT
-  }
+  manifest = yamldecode(file("K8s/karpenter/karpenter-provisioners-crd.yaml"))
 }
+
 
 # -------------------------
 # Karpenter Provisioner
