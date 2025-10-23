@@ -245,8 +245,10 @@ resource "helm_release" "karpenter" {
 # -------------------------
 resource "kubernetes_manifest" "karpenter_provisioner" {
   provider   = kubernetes.eks
-  depends_on = [helm_release.karpenter]
-
+  depends_on = [
+               module.eks,
+               helm_release.karpenter
+               ]
   manifest = {
     apiVersion = "karpenter.sh/v1alpha5"
     kind       = "Provisioner"
