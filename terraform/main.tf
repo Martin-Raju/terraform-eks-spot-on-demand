@@ -241,6 +241,49 @@ resource "helm_release" "karpenter" {
 }
 
 # -------------------------
+# Karpenter Provisioner
+# -------------------------
+resource "kubernetes_manifest" "karpenter_provisioner" {
+  depends_on = [helm_release.karpenter]
+
+  manifest = {
+    apiVersion = "karpenter.sh/v1alpha5"
+    kind       = "Provisioner"
+    metadata = {
+      name = "default"
+    }
+    spec = {
+      ttlSecondsAfterEmpty = 30
+      requirements = [
+        {
+          key      = "kubernetes.io/arch"
+          operator = "In"
+          values   = ["amd64"]
+        },
+        {
+          key      = "karpenter.k8s.aws/instance-category"
+          operator = "In"
+          values   = ["m", "t"]
+        }
+      ]
+      limits = {
+        resources = {
+          cpu    = "1000"
+          memory = "200Gi"
+        }
+      }
+      provider = {
+        subnetSelector = {
+          karpenter = var.cluster_name
+        }
+        securityGroupSelector = {
+          karpenter = var.cluster_name
+        }
+      }
+    }
+  }
+}
+# -------------------------
 # Bastion Security Group
 # -------------------------
 module "bastion_sg" {
