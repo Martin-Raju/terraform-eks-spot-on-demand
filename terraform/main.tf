@@ -246,7 +246,7 @@ resource "null_resource" "karpenter_provisioner_crd" {
 #  provider = kubernetes.eks
 #  depends_on = [
 #    time_sleep.wait_for_eks,
-    
+
 #    helm_release.karpenter
 #  ]
 #  manifest = {
