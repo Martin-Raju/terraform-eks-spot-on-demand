@@ -43,18 +43,22 @@ jobs:
         working-directory: ./terraform
         shell: bash
         run: |
-          set +e
-          cluster_name=$(terraform output -raw cluster_name 2>/dev/null || echo "")
-          cluster_endpoint=$(terraform output -raw cluster_endpoint 2>/dev/null || echo "")
-          set -e
+          echo "Fetching Terraform outputs safely..."
+
+          # Capture outputs safely without breaking GitHub Actions if missing
+          cluster_name=$(terraform output -raw cluster_name 2>/dev/null || echo "unknown")
+          cluster_endpoint=$(terraform output -raw cluster_endpoint 2>/dev/null || echo "unknown")
 
           echo "Terraform Outputs:"
           echo " - cluster_name: $cluster_name"
           echo " - cluster_endpoint: $cluster_endpoint"
 
-          # Export to GitHub output
-          echo "cluster_name=$cluster_name" >> $GITHUB_OUTPUT
-          echo "cluster_endpoint=$cluster_endpoint" >> $GITHUB_OUTPUT
+          # Only write to GITHUB_OUTPUT if values exist
+          {
+            echo "cluster_name=$cluster_name"
+            echo "cluster_endpoint=$cluster_endpoint"
+          } >> $GITHUB_OUTPUT
+
 
   karpenter:
     runs-on: ubuntu-latest
