@@ -195,13 +195,11 @@ module "karpenter" {
 # -------------------------
 # Wait for EKS API to settle 
 # -------------------------
-#resource "time_sleep" "wait_for_eks" {
+resource "time_sleep" "wait_for_eks" {
 #depends on the EKS module finishing
-#depends_on = [module.eks]
-
-#60s is typically enough; increase if your CI is slow
-#create_duration = "90s"
-#}
+  depends_on = [module.eks]
+  create_duration = "90s"
+}
 
 # -------------------------
 # Karpenter Helm Release
@@ -246,7 +244,8 @@ resource "helm_release" "karpenter" {
 resource "kubernetes_manifest" "karpenter_provisioner" {
   provider = kubernetes.eks
   depends_on = [
-    module.eks,
+    time_sleep.wait_for_eks,
+    
     helm_release.karpenter
   ]
   manifest = {
