@@ -229,6 +229,16 @@ resource "helm_release" "karpenter" {
   ]
 }
 
+resource "null_resource" "karpenter_provisioner_crd" {
+  depends_on = [helm_release.karpenter]
+
+  provisioner "local-exec" {
+    command = <<EOT
+      kubectl apply -f https://raw.githubusercontent.com/aws/karpenter-provider-aws/v0.16.2/charts/karpenter/crds/karpenter.sh_provisioners.yaml
+    EOT
+  }
+}
+
 # -------------------------
 # Karpenter Provisioner
 # -------------------------
