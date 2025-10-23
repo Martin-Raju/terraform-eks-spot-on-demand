@@ -244,6 +244,7 @@ resource "helm_release" "karpenter" {
 # Karpenter Provisioner
 # -------------------------
 resource "kubernetes_manifest" "karpenter_provisioner" {
+  provider   = kubernetes.eks
   depends_on = [helm_release.karpenter]
 
   manifest = {
