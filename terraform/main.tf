@@ -68,9 +68,9 @@ data "aws_ecrpublic_authorization_token" "token" {
 # -------------------------
 
 module "label" {
-  source      = "./modules/terraform-null-label-0.25.0"
-  name        = var.cluster_name
-  environment = var.environment
+  source           = "./modules/terraform-null-label-0.25.0"
+  name             = var.cluster_name
+  environment      = var.environment
   label_value_case = "lower"
 }
 
@@ -196,11 +196,11 @@ module "karpenter" {
 # Wait for EKS API to settle 
 # -------------------------
 #resource "time_sleep" "wait_for_eks" {
-  #depends on the EKS module finishing
-  #depends_on = [module.eks]
+#depends on the EKS module finishing
+#depends_on = [module.eks]
 
-  #60s is typically enough; increase if your CI is slow
-  #create_duration = "90s"
+#60s is typically enough; increase if your CI is slow
+#create_duration = "90s"
 #}
 
 # -------------------------
