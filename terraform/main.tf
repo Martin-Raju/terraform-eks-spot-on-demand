@@ -236,6 +236,13 @@ resource "kubernetes_manifest" "karpenter_provisioner_crd" {
   manifest = yamldecode(file("K8s/karpenter/karpenter-provisioners-crd.yaml"))
 }
 
+resource "kubernetes_manifest" "karpenter_provisioner" {
+  provider   = kubernetes.eks
+  depends_on = [helm_release.karpenter]
+
+  manifest = yamldecode(file("K8s/karpenter/karpenter-provisioners.yaml"))
+}
+
 
 # -------------------------
 # Karpenter Provisioner
