@@ -154,7 +154,7 @@ module "eks" {
       capacity_type  = "SPOT"
       min_size       = 1
       max_size       = 3
-      desired_size   = 2
+      desired_size   = 1
 
       labels = {
         # Used to ensure Karpenter runs on nodes that it does not manage
