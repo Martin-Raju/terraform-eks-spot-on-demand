@@ -244,16 +244,16 @@ resource "helm_release" "karpenter" {
 # Karpenter Provisioner
 # -------------------------
 resource "kubernetes_manifest" "karpenter_provisioner" {
-  provider   = kubernetes.eks
+  provider = kubernetes.eks
   depends_on = [
-               module.eks,
-               helm_release.karpenter
-               ]
+    module.eks,
+    helm_release.karpenter
+  ]
   manifest = {
     apiVersion = "karpenter.sh/v1alpha5"
     kind       = "Provisioner"
     metadata = {
-     name = "default"
+      name = "default"
     }
     spec = {
       ttlSecondsAfterEmpty = 30
@@ -281,7 +281,7 @@ resource "kubernetes_manifest" "karpenter_provisioner" {
         }
         securityGroupSelector = {
           karpenter = var.cluster_name
-       }
+        }
       }
     }
   }
