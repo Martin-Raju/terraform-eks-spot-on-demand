@@ -46,6 +46,12 @@ jobs:
         working-directory: ./terraform
         shell: bash
         run: |
+          # Get Terraform outputs as JSON
+          terraform output -json > tf_outputs.json
+
+          # Parse specific outputs using jq
+          cluster_name=$(jq -r '.cluster_name.value' tf_outputs.json)
+          cluster_endpoint=$(jq -r '.cluster_endpoint.value' tf_outputs.json)
 
           # Clean any stray debug lines
           clean_cluster_name=$(echo "$cluster_name" | sed 's/::debug::.*//g' | tr -d '\r')
@@ -55,9 +61,10 @@ jobs:
           echo " - cluster_name: $clean_cluster_name"
           echo " - cluster_endpoint: $clean_cluster_endpoint"
 
-          # Export outputs to GitHub Actions
-          # echo "cluster_name=$clean_cluster_name" >> "$GITHUB_OUTPUT"
-          # echo "cluster_endpoint=$clean_cluster_endpoint" >> "$GITHUB_OUTPUT"
+          # Export outputs for later steps
+          echo "cluster_name=$clean_cluster_name" >> $GITHUB_OUTPUT
+          echo "cluster_endpoint=$clean_cluster_endpoint" >> $GITHUB_OUTPUT
+
 
 
     
