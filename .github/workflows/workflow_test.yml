@@ -12,8 +12,9 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
     outputs:
-      cluster_name: ${{ steps.output.outputs.cluster_name }}
-      cluster_endpoint: ${{ steps.output.outputs.cluster_endpoint }}
+       cluster_name: ${{ steps.tf_outputs.outputs.cluster_name }}
+       cluster_endpoint: ${{ steps.tf_outputs.outputs.cluster_endpoint }}
+
 
     steps:
       - name: Checkout repository
@@ -38,7 +39,7 @@ jobs:
         #run: terraform destroy -auto-approve
         
       - name: Export Terraform Outputs
-        id: tf_outputs
+        id: tf_outputs
         working-directory: ./terraform
         shell: bash
         run: |
@@ -50,8 +51,8 @@ jobs:
           echo " - cluster_endpoint: $cluster_endpoint"
           echo "cluster_name=$cluster_name" >> $GITHUB_OUTPUT
           echo "cluster_endpoint=$cluster_endpoint" >> $GITHUB_OUTPUT
-
-  karpenter:
+    
+    karpenter:
     runs-on: ubuntu-latest
     needs: terraform
 
