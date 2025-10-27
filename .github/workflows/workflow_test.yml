@@ -49,27 +49,30 @@ jobs:
           set -e
           echo "🔍 Fetching Terraform outputs from S3 remote backend..."
           
-          TF_BIN=${TERRAFORM_CLI_PATH:-terraform}
+          # Detect Terraform binary path
+          if [ -d "${TERRAFORM_CLI_PATH}" ]; then
+            TF_BIN="${TERRAFORM_CLI_PATH}/terraform"
+          else
+            TF_BIN="${TERRAFORM_CLI_PATH:-terraform}"
+          fi
           echo "Using Terraform binary: $TF_BIN"
 
-          # Reinitialize backend to ensure connection to S3
+          # Initialize backend (S3)
           $TF_BIN init -input=false -reconfigure -no-color >/dev/null
 
-          # Capture only the values, suppressing debug and colors
-          cluster_name=$($TF_BIN output -raw cluster_name 2>/dev/null | tr -d '\r' | tr -d '\n')
-          cluster_endpoint=$($TF_BIN output -raw cluster_endpoint 2>/dev/null | tr -d '\r' | tr -d '\n')
+          # Fetch outputs cleanly
+          cluster_name=$($TF_BIN output -raw cluster_name 2>/dev/null | tr -d '\r\n')
+          cluster_endpoint=$($TF_BIN output -raw cluster_endpoint 2>/dev/null | tr -d '\r\n')
 
           echo "✅ Terraform Outputs:"
           echo " - cluster_name: ${cluster_name:-<empty>}"
           echo " - cluster_endpoint: ${cluster_endpoint:-<empty>}"
 
-          # Validate
           if [[ -z "$cluster_name" || "$cluster_name" == "<empty>" ]]; then
             echo "❌ Missing cluster_name output!"
             exit 1
           fi
 
-          # Write clean outputs (no debug, no colors)
           {
             echo "cluster_name=${cluster_name}"
             echo "cluster_endpoint=${cluster_endpoint}"
