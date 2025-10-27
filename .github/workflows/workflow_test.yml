@@ -46,32 +46,33 @@ jobs:
         working-directory: ./terraform
         shell: bash
         run: |
-          echo "🔍 Fetching outputs directly from terraform.tfstate..."
-          STATE_FILE="./terraform.tfstate"
+          set -e
+          echo "🔍 Fetching Terraform outputs from S3 remote backend..."
+          
+          TF_BIN=$(which terraform)
+          echo "Using Terraform binary: $TF_BIN"
 
-          if [ ! -f "$STATE_FILE" ]; then
-            echo "❌ State file not found at $STATE_FILE"
+          # Reinitialize Terraform to ensure backend access
+          $TF_BIN init -input=false -reconfigure
+
+          # Capture outputs safely
+          cluster_name=$($TF_BIN output -raw cluster_name 2>/dev/null || echo "")
+          cluster_endpoint=$($TF_BIN output -raw cluster_endpoint 2>/dev/null || echo "")
+
+          echo "✅ Terraform Outputs:"
+          echo " - cluster_name: ${cluster_name:-<empty>}"
+          echo " - cluster_endpoint: ${cluster_endpoint:-<empty>}"
+
+          if [[ -z "$cluster_name" || "$cluster_name" == "<empty>" ]]; then
+            echo "❌ Missing cluster_name output!"
             exit 1
-          fi
-
-          cluster_name=$(jq -r '.outputs.cluster_name.value' "$STATE_FILE")
-          cluster_endpoint=$(jq -r '.outputs.cluster_endpoint.value' "$STATE_FILE")
-
-          echo "✅ Extracted outputs from state file:"
-          echo " - cluster_name: $cluster_name"
-          echo " - cluster_endpoint: $cluster_endpoint"
-
-          if [[ -z "$cluster_name" || "$cluster_name" == "null" ]]; then
-            cluster_name="unknown"
-          fi
-          if [[ -z "$cluster_endpoint" || "$cluster_endpoint" == "null" ]]; then
-            cluster_endpoint="unknown"
           fi
 
           {
             echo "cluster_name=${cluster_name}"
             echo "cluster_endpoint=${cluster_endpoint}"
           } >> "$GITHUB_OUTPUT"
+
         
       # - name: Export Terraform Outputs
       #   id: tf_outputs
