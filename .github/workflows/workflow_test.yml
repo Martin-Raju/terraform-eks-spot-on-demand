@@ -44,13 +44,19 @@ jobs:
         shell: bash
         run: |
           echo "Fetching Terraform outputs safely..."
-          cluster_name=$(terraform output -raw cluster_name 2>/dev/null || echo "unknown")
-          cluster_endpoint=$(terraform output -raw cluster_endpoint 2>/dev/null || echo "unknown")
+          cluster_name=$(terraform output -raw cluster_name 2>/dev/null | grep -v "::debug::" || echo "unknown")
+          cluster_endpoint=$(terraform output -raw cluster_endpoint 2>/dev/null | grep -v "::debug::" || echo "unknown")
+
           echo "Terraform Outputs:"
           echo " - cluster_name: $cluster_name"
           echo " - cluster_endpoint: $cluster_endpoint"
-          echo "cluster_name=$cluster_name" >> $GITHUB_OUTPUT
-          echo "cluster_endpoint=$cluster_endpoint" >> $GITHUB_OUTPUT
+
+          # Clean and validate output before exporting
+          clean_cluster_name=$(echo "$cluster_name" | tr -d '\r')
+          clean_cluster_endpoint=$(echo "$cluster_endpoint" | tr -d '\r')
+
+          echo "cluster_name=$clean_cluster_name" >> $GITHUB_OUTPUT
+          echo "cluster_endpoint=$clean_cluster_endpoint" >> $GITHUB_OUTPUT
     
   # karpenter:
   #   runs-on: ubuntu-latest
