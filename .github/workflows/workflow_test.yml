@@ -82,6 +82,8 @@ jobs:
           # Export outputs to GitHub Actions
           echo "cluster_name=$clean_cluster_name" >> "$GITHUB_OUTPUT"
           echo "cluster_endpoint=$clean_cluster_endpoint" >> "$GITHUB_OUTPUT"
+          echo "$clean_cluster_name"
+          echo "$clean_cluster_endpoint"
 
     
   # karpenter:
