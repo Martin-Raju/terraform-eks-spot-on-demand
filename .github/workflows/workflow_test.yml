@@ -48,17 +48,23 @@ jobs:
         run: |
           echo "Fetching Terraform outputs from remote S3 backend..."
 
-          # Initialize to ensure connection to S3 backend
           terraform init -input=false -backend-config="region=${AWS_REGION}" -reconfigure
 
-          # Export outputs to JSON file (safe for large values)
-          terraform output -json > tf_outputs.json
+          # Run terraform output and remove the first non-JSON line if it exists
+          terraform output -json > tf_outputs_raw.json
 
-          echo "---- Terraform Outputs ----"
+          # If the first line doesn't start with '{', strip it out
+          if ! head -n 1 tf_outputs_raw.json | grep -q '^{'; then
+            tail -n +2 tf_outputs_raw.json > tf_outputs.json
+          else
+            cp tf_outputs_raw.json tf_outputs.json
+          fi
+
+          echo "---- Cleaned Terraform Outputs ----"
           cat tf_outputs.json
-          echo "----------------------------"
+          echo "-----------------------------------"
 
-          # Validate JSON file
+          # Validate JSON
           if ! jq empty tf_outputs.json; then
             echo "❌ Invalid JSON in tf_outputs.json"
             exit 1
@@ -72,14 +78,10 @@ jobs:
           echo " - cluster_name: $cluster_name"
           echo " - cluster_endpoint: $cluster_endpoint"
 
-          # Export outputs for next job usage
+          # Export to GitHub outputs
           echo "cluster_name=$cluster_name" >> $GITHUB_OUTPUT
           echo "cluster_endpoint=$cluster_endpoint" >> $GITHUB_OUTPUT
 
-
-
-
-    
   # karpenter:
   #   runs-on: ubuntu-latest
   #   needs: terraform
