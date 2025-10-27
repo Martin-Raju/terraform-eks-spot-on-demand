@@ -49,17 +49,21 @@ jobs:
           REAL_TERRAFORM=$(command -v terraform)
           echo "Terraform path (before sanity fix): $REAL_TERRAFORM"
 
-          # If it's still a wrapper, get the cached binary
-          if [[ "$REAL_TERRAFORM" == *"terraform-bin"* ]]; then
+          # If it's a wrapper, find the actual binary from host cache
+          if [[ "$REAL_TERRAFORM" == *"terraform-bin"* || ! -x "$REAL_TERRAFORM" ]]; then
             REAL_TERRAFORM=$(find /opt/hostedtoolcache/terraform -type f -name terraform | sort | tail -n 1)
+          fi
+
+          # Fallback to default installation path if still not found
+          if [[ ! -x "$REAL_TERRAFORM" ]]; then
+            REAL_TERRAFORM="/usr/bin/terraform"
           fi
 
           echo "Using real Terraform binary: $REAL_TERRAFORM"
 
-          # Ensure executable
           chmod +x "$REAL_TERRAFORM"
 
-          # Run via 'eval' to bypass GitHub runner wrapping
+          # Run via eval to bypass GitHub wrapper
           cluster_name=$(eval "$REAL_TERRAFORM output -raw cluster_name 2>/dev/null" || echo "unknown")
           cluster_endpoint=$(eval "$REAL_TERRAFORM output -raw cluster_endpoint 2>/dev/null" || echo "unknown")
 
@@ -67,7 +71,7 @@ jobs:
           echo " - cluster_name: $cluster_name"
           echo " - cluster_endpoint: $cluster_endpoint"
 
-          # Clean any stray characters
+          # Clean any stray debug lines
           clean_cluster_name=$(echo "$cluster_name" | sed 's/::debug::.*//g' | tr -d '\r')
           clean_cluster_endpoint=$(echo "$cluster_endpoint" | sed 's/::debug::.*//g' | tr -d '\r')
 
@@ -75,8 +79,9 @@ jobs:
           echo " - cluster_name: $clean_cluster_name"
           echo " - cluster_endpoint: $clean_cluster_endpoint"
 
-          echo "cluster_name=$clean_cluster_name" >> $GITHUB_OUTPUT
-          echo "cluster_endpoint=$clean_cluster_endpoint" >> $GITHUB_OUTPUT
+          # Export outputs to GitHub Actions
+          echo "cluster_name=$clean_cluster_name" >> "$GITHUB_OUTPUT"
+          echo "cluster_endpoint=$clean_cluster_endpoint" >> "$GITHUB_OUTPUT"
 
     
   # karpenter:
