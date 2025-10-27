@@ -60,7 +60,6 @@ jobs:
           fi
 
           echo "Using real Terraform binary: $REAL_TERRAFORM"
-
           chmod +x "$REAL_TERRAFORM"
 
           # Run via eval to bypass GitHub wrapper
@@ -71,17 +70,17 @@ jobs:
           echo " - cluster_name: $cluster_name"
           echo " - cluster_endpoint: $cluster_endpoint"
 
-          # Clean any stray debug lines
-          clean_cluster_name=$(echo "$cluster_name" | sed 's/::debug::.*//g' | tr -d '\r')
-          clean_cluster_endpoint=$(echo "$cluster_endpoint" | sed 's/::debug::.*//g' | tr -d '\r')
+          # Clean any stray debug lines and ensure one line only
+          clean_cluster_name=$(echo "$cluster_name" | sed 's/::debug::.*//g' | tr -d '\r' | tr -d '\n')
+          clean_cluster_endpoint=$(echo "$cluster_endpoint" | sed 's/::debug::.*//g' | tr -d '\r' | tr -d '\n')
 
           echo "Cleaned Outputs:"
           echo " - cluster_name: $clean_cluster_name"
           echo " - cluster_endpoint: $clean_cluster_endpoint"
 
-          # Export outputs to GitHub Actions
-          echo "cluster_name=$clean_cluster_name" >> "$GITHUB_OUTPUT"
-          echo "cluster_endpoint=$clean_cluster_endpoint" >> "$GITHUB_OUTPUT"
+          # Write outputs
+          echo "cluster_name=${clean_cluster_name}" >> "$GITHUB_OUTPUT"
+          echo "cluster_endpoint=${clean_cluster_endpoint}" >> "$GITHUB_OUTPUT"
 
     
   # karpenter:
