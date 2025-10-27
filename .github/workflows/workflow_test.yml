@@ -41,42 +41,42 @@ jobs:
       - name: Install jq
         run: sudo apt-get install -y jq
 
-- name: Export Terraform Outputs
-  id: tf_outputs
-  working-directory: ./terraform
-  shell: bash
-  run: |
-    set -e
-    echo "Fetching Terraform outputs from S3 remote backend..."
+      - name: Export Terraform Outputs
+        id: tf_outputs
+        working-directory: ./terraform
+        shell: bash
+        run: |
+          set -e
+          echo "Fetching Terraform outputs from S3 remote backend..."
 
-    # Detect Terraform binary
-    if [ -x "${TERRAFORM_CLI_PATH}" ]; then
-      TF_BIN="${TERRAFORM_CLI_PATH}"
-    elif [ -x "${TERRAFORM_CLI_PATH}/terraform" ]; then
-      TF_BIN="${TERRAFORM_CLI_PATH}/terraform"
-    else
-      TF_BIN="terraform"
-    fi
-    echo " Using Terraform binary: $TF_BIN"
+          # Detect Terraform binary
+          if [ -x "${TERRAFORM_CLI_PATH}" ]; then
+            TF_BIN="${TERRAFORM_CLI_PATH}"
+          elif [ -x "${TERRAFORM_CLI_PATH}/terraform" ]; then
+            TF_BIN="${TERRAFORM_CLI_PATH}/terraform"
+          else
+            TF_BIN="terraform"
+          fi
+          echo " Using Terraform binary: $TF_BIN"
 
-    # Initialize backend to pull remote state
-    $TF_BIN init -input=false -reconfigure -no-color >/dev/null
+          # Initialize backend to pull remote state
+          $TF_BIN init -input=false -reconfigure -no-color >/dev/null
 
-    # Cleanly capture only the actual output values (strip debug/command noise)
-    cluster_name=$($TF_BIN output -raw cluster_name 2>/dev/null | tail -n 1 | tr -d '\r\n')
-    cluster_endpoint=$($TF_BIN output -raw cluster_endpoint 2>/dev/null | tail -n 1 | tr -d '\r\n')
+          # Cleanly capture only the actual output values (strip debug/command noise)
+          cluster_name=$($TF_BIN output -raw cluster_name 2>/dev/null | tail -n 1 | tr -d '\r\n')
+          cluster_endpoint=$($TF_BIN output -raw cluster_endpoint 2>/dev/null | tail -n 1 | tr -d '\r\n')
 
-    echo " Terraform Outputs:"
-    echo " - cluster_name: $cluster_name"
-    echo " - cluster_endpoint: $cluster_endpoint"
+          echo " Terraform Outputs:"
+          echo " - cluster_name: $cluster_name"
+          echo " - cluster_endpoint: $cluster_endpoint"
 
-    if [[ -z "$cluster_name" || -z "$cluster_endpoint" ]]; then
-      echo " Missing cluster outputs!"
-      exit 1
-    fi
+          if [[ -z "$cluster_name" || -z "$cluster_endpoint" ]]; then
+            echo " Missing cluster outputs!"
+            exit 1
+          fi
 
-    echo "cluster_name=$cluster_name" >> "$GITHUB_OUTPUT"
-    echo "cluster_endpoint=$cluster_endpoint" >> "$GITHUB_OUTPUT"
+          echo "cluster_name=$cluster_name" >> "$GITHUB_OUTPUT"
+          echo "cluster_endpoint=$cluster_endpoint" >> "$GITHUB_OUTPUT"
 
 
 
