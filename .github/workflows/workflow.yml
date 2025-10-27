@@ -38,50 +38,36 @@ jobs:
         run: terraform apply -auto-approve tfplan
         #run: terraform destroy -auto-approve
 
-      - name: Install jq
-        run: sudo apt-get install -y jq
-
       - name: Export Terraform Outputs
         id: tf_outputs
         working-directory: ./terraform
         shell: bash
         run: |
-            echo "Fetching Terraform outputs..."
+          echo "Fetching Terraform outputs..."
 
-            # Initialize backend (for S3)
-            terraform init -input=false -backend-config="region=${AWS_REGION}" -reconfigure
+          # Ensure backend is initialized
+          terraform init -input=false -reconfigure -no-color >/dev/null
 
-            # Get Terraform outputs in JSON format (clean, no stderr mixed in)
-            terraform output -json > tf_outputs.json
+          # Use Terraform's built-in raw output to avoid JSON parsing issues
+          cluster_name=$(terraform output -raw cluster_name)
+          cluster_endpoint=$(terraform output -raw cluster_endpoint)
 
-            # Confirm file isn't empty
-            if [[ ! -s tf_outputs.json ]]; then
-              echo "tf_outputs.json is empty — likely wrong directory or no outputs found"
-              ls -la
-              exit 1
-            fi
+          # Validate output values
+          if [ -z "$cluster_name" ] || [ -z "$cluster_endpoint" ]; then
+            echo "Failed to fetch Terraform outputs. Check your output definitions."
+            terraform output
+            exit 1
+          fi
 
-            # Validate JSON
-            if ! jq -e . tf_outputs.json >/dev/null 2>&1; then
-              echo "Invalid JSON in tf_outputs.json"
-              cat tf_outputs.json
-              exit 1
-            fi
+          echo "Parsed Outputs:"
+          echo " - cluster_name: $cluster_name"
+          echo " - cluster_endpoint: $cluster_endpoint"
 
-            # Parse outputs
-            cluster_name=$(jq -r '.cluster_name.value' tf_outputs.json)
-            cluster_endpoint=$(jq -r '.cluster_endpoint.value' tf_outputs.json)
-
-            # Display parsed values
-            echo "Parsed Outputs:"
-            echo " - cluster_name: $cluster_name"
-            echo " - cluster_endpoint: $cluster_endpoint"
-
-            # Export for later steps
-            {
-              echo "cluster_name=$cluster_name"
-              echo "cluster_endpoint=$cluster_endpoint"
-            } >> "$GITHUB_OUTPUT"
+          # Export outputs for other jobs
+          {
+            echo "cluster_name=$cluster_name"
+            echo "cluster_endpoint=$cluster_endpoint"
+          } >> "$GITHUB_OUTPUT"
 
 
 
