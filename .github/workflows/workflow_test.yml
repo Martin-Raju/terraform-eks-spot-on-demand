@@ -48,28 +48,31 @@ jobs:
         run: |
           echo "Fetching Terraform outputs from remote S3 backend..."
 
-          # Always initialize to connect to S3 backend
+          # Initialize to ensure connection to S3 backend
           terraform init -input=false -backend-config="region=${AWS_REGION}" -reconfigure
 
-          # Safely get outputs as JSON
-          output_json=$(terraform output -json 2>/dev/null || echo "{}")
+          # Export outputs to JSON file (safe for large values)
+          terraform output -json > tf_outputs.json
 
-          # Validate JSON
-          if ! echo "$output_json" | jq empty 2>/dev/null; then
-            echo "❌ Invalid JSON output from terraform output"
-            echo "$output_json"
+          echo "---- Terraform Outputs ----"
+          cat tf_outputs.json
+          echo "----------------------------"
+
+          # Validate JSON file
+          if ! jq empty tf_outputs.json; then
+            echo "❌ Invalid JSON in tf_outputs.json"
             exit 1
           fi
 
-          # Extract outputs safely
-          cluster_name=$(echo "$output_json" | jq -r '.cluster_name.value // empty')
-          cluster_endpoint=$(echo "$output_json" | jq -r '.cluster_endpoint.value // empty')
+          # Parse specific outputs
+          cluster_name=$(jq -r '.cluster_name.value' tf_outputs.json)
+          cluster_endpoint=$(jq -r '.cluster_endpoint.value' tf_outputs.json)
 
-          echo "✅ Terraform Outputs:"
+          echo "✅ Parsed Outputs:"
           echo " - cluster_name: $cluster_name"
           echo " - cluster_endpoint: $cluster_endpoint"
 
-          # Export outputs for next jobs
+          # Export outputs for next job usage
           echo "cluster_name=$cluster_name" >> $GITHUB_OUTPUT
           echo "cluster_endpoint=$cluster_endpoint" >> $GITHUB_OUTPUT
 
