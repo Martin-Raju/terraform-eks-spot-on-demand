@@ -48,14 +48,24 @@ jobs:
         run: |
             echo "Fetching Terraform outputs..."
 
-            # Reconfigure backend (for S3)
+            # Change into Terraform working directory (update this path!)
+            cd terraform || exit 1
+
+            # Initialize backend (for S3)
             terraform init -input=false -backend-config="region=${AWS_REGION}" -reconfigure
 
-            # Capture Terraform JSON output directly (only stdout, no logs)
+            # Get Terraform outputs in JSON format (clean, no stderr mixed in)
             terraform output -json > tf_outputs.json
 
-            # Validate JSON before parsing
-            if ! jq -e . tf_outputs.json > /dev/null 2>&1; then
+            # Confirm file isn't empty
+            if [[ ! -s tf_outputs.json ]]; then
+              echo "tf_outputs.json is empty — likely wrong directory or no outputs found"
+              ls -la
+              exit 1
+            fi
+
+            # Validate JSON
+            if ! jq -e . tf_outputs.json >/dev/null 2>&1; then
               echo "Invalid JSON in tf_outputs.json"
               cat tf_outputs.json
               exit 1
@@ -70,11 +80,12 @@ jobs:
             echo " - cluster_name: $cluster_name"
             echo " - cluster_endpoint: $cluster_endpoint"
 
-            # Export for later GitHub Actions steps
+            # Export for later steps
             {
               echo "cluster_name=$cluster_name"
               echo "cluster_endpoint=$cluster_endpoint"
             } >> "$GITHUB_OUTPUT"
+
 
 
   # karpenter:
