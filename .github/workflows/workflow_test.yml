@@ -37,53 +37,88 @@ jobs:
         working-directory: ./terraform
         run: terraform apply -auto-approve tfplan
         #run: terraform destroy -auto-approve
-        
+
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
       - name: Export Terraform Outputs
         id: tf_outputs
         working-directory: ./terraform
         shell: bash
         run: |
-          echo "Fetching Terraform outputs safely..."
+          echo "🔍 Fetching outputs directly from terraform.tfstate..."
+          STATE_FILE="./terraform.tfstate"
 
-          # Detect real Terraform binary
-          REAL_TERRAFORM=$(command -v terraform)
-          echo "Terraform path (before sanity fix): $REAL_TERRAFORM"
-
-          # If it's a wrapper, find the actual binary from host cache
-          if [[ "$REAL_TERRAFORM" == *"terraform-bin"* || ! -x "$REAL_TERRAFORM" ]]; then
-            REAL_TERRAFORM=$(find /opt/hostedtoolcache/terraform -type f -name terraform | sort | tail -n 1)
+          if [ ! -f "$STATE_FILE" ]; then
+            echo "❌ State file not found at $STATE_FILE"
+            exit 1
           fi
 
-          # Fallback to default installation path if still not found
-          if [[ ! -x "$REAL_TERRAFORM" ]]; then
-            REAL_TERRAFORM="/usr/bin/terraform"
-          fi
+          cluster_name=$(jq -r '.outputs.cluster_name.value' "$STATE_FILE")
+          cluster_endpoint=$(jq -r '.outputs.cluster_endpoint.value' "$STATE_FILE")
 
-          echo "Using real Terraform binary: $REAL_TERRAFORM"
-
-          chmod +x "$REAL_TERRAFORM"
-
-          # Run via eval to bypass GitHub wrapper
-          cluster_name=$(eval "$REAL_TERRAFORM output -raw cluster_name 2>/dev/null" || echo "unknown")
-          cluster_endpoint=$(eval "$REAL_TERRAFORM output -raw cluster_endpoint 2>/dev/null" || echo "unknown")
-
-          echo "Terraform Outputs:"
+          echo "✅ Extracted outputs from state file:"
           echo " - cluster_name: $cluster_name"
           echo " - cluster_endpoint: $cluster_endpoint"
 
-          # Clean any stray debug lines
-          clean_cluster_name=$(echo "$cluster_name" | sed 's/::debug::.*//g' | tr -d '\r')
-          clean_cluster_endpoint=$(echo "$cluster_endpoint" | sed 's/::debug::.*//g' | tr -d '\r')
+          if [[ -z "$cluster_name" || "$cluster_name" == "null" ]]; then
+            cluster_name="unknown"
+          fi
+          if [[ -z "$cluster_endpoint" || "$cluster_endpoint" == "null" ]]; then
+            cluster_endpoint="unknown"
+          fi
 
-          echo "Cleaned Outputs:"
-          echo " - cluster_name: $clean_cluster_name"
-          echo " - cluster_endpoint: $clean_cluster_endpoint"
+          {
+            echo "cluster_name=${cluster_name}"
+            echo "cluster_endpoint=${cluster_endpoint}"
+          } >> "$GITHUB_OUTPUT"
+        
+      # - name: Export Terraform Outputs
+      #   id: tf_outputs
+      #   working-directory: ./terraform
+      #   shell: bash
+      #   run: |
+      #     echo "Fetching Terraform outputs safely..."
 
-          # Export outputs to GitHub Actions
-          echo "cluster_name=$clean_cluster_name" >> "$GITHUB_OUTPUT"
-          echo "cluster_endpoint=$clean_cluster_endpoint" >> "$GITHUB_OUTPUT"
-          echo "$clean_cluster_name"
-          echo "$clean_cluster_endpoint"
+      #     # Detect real Terraform binary
+      #     REAL_TERRAFORM=$(command -v terraform)
+      #     echo "Terraform path (before sanity fix): $REAL_TERRAFORM"
+
+      #     # If it's a wrapper, find the actual binary from host cache
+      #     if [[ "$REAL_TERRAFORM" == *"terraform-bin"* || ! -x "$REAL_TERRAFORM" ]]; then
+      #       REAL_TERRAFORM=$(find /opt/hostedtoolcache/terraform -type f -name terraform | sort | tail -n 1)
+      #     fi
+
+      #     # Fallback to default installation path if still not found
+      #     if [[ ! -x "$REAL_TERRAFORM" ]]; then
+      #       REAL_TERRAFORM="/usr/bin/terraform"
+      #     fi
+
+      #     echo "Using real Terraform binary: $REAL_TERRAFORM"
+
+      #     chmod +x "$REAL_TERRAFORM"
+
+      #     # Run via eval to bypass GitHub wrapper
+      #     cluster_name=$(eval "$REAL_TERRAFORM output -raw cluster_name 2>/dev/null" || echo "unknown")
+      #     cluster_endpoint=$(eval "$REAL_TERRAFORM output -raw cluster_endpoint 2>/dev/null" || echo "unknown")
+
+      #     echo "Terraform Outputs:"
+      #     echo " - cluster_name: $cluster_name"
+      #     echo " - cluster_endpoint: $cluster_endpoint"
+
+      #     # Clean any stray debug lines
+      #     clean_cluster_name=$(echo "$cluster_name" | sed 's/::debug::.*//g' | tr -d '\r')
+      #     clean_cluster_endpoint=$(echo "$cluster_endpoint" | sed 's/::debug::.*//g' | tr -d '\r')
+
+      #     echo "Cleaned Outputs:"
+      #     echo " - cluster_name: $clean_cluster_name"
+      #     echo " - cluster_endpoint: $clean_cluster_endpoint"
+
+      #     # Export outputs to GitHub Actions
+      #     echo "cluster_name=$clean_cluster_name" >> "$GITHUB_OUTPUT"
+      #     echo "cluster_endpoint=$clean_cluster_endpoint" >> "$GITHUB_OUTPUT"
+      #     echo "$clean_cluster_name"
+      #     echo "$clean_cluster_endpoint"
 
     
   # karpenter:
