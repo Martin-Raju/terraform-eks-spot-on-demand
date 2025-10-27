@@ -39,11 +39,11 @@ jobs:
         run: terraform apply -auto-approve tfplan
         #run: terraform destroy -auto-approve
 
-     - name: Export Terraform Outputs
-       id: tf_outputs
-       working-directory: ./terraform
-       shell: bash
-       run: |
+      - name: Export Terraform Outputs
+        id: tf_outputs
+        working-directory: ./terraform
+        shell: bash
+        run: |
          echo "Fetching Terraform outputs safely..."
 
          # Call Terraform directly using its CLI path if available
