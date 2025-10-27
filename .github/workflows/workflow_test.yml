@@ -39,26 +39,31 @@ jobs:
         run: terraform apply -auto-approve tfplan
         #run: terraform destroy -auto-approve
 
-      - name: Export Terraform Outputs
-        id: tf_outputs
-        working-directory: ./terraform
-        shell: bash
-        run: |
-              echo "Fetching Terraform outputs safely..."
-              cluster_name=$(terraform output -raw cluster_name 2>/dev/null | tr -d '\r' | awk 'NR==1{print $1}')
-              cluster_endpoint=$(terraform output -raw cluster_endpoint 2>/dev/null | tr -d '\r' | awk 'NR==1{print $1}')
+     - name: Export Terraform Outputs
+       id: tf_outputs
+       working-directory: ./terraform
+       shell: bash
+       run: |
+         echo "Fetching Terraform outputs safely..."
 
-              echo "Terraform Outputs:"
-              echo " - cluster_name: $cluster_name"
-              echo " - cluster_endpoint: $cluster_endpoint"
-              echo "cluster_name=${cluster_name}" >> $GITHUB_OUTPUT
-              echo "cluster_endpoint=${cluster_endpoint}" >> $GITHUB_OUTPUT
-      - name: Validate Terraform Outputs
-        run: |
-            if [[ -z "$cluster_name" || "$cluster_name" == "unknown" ]]; then
-               echo "❌ Missing cluster_name output!"
-               exit 1
-            fi
+         # Call Terraform directly using its CLI path if available
+         TF_BIN=${TERRAFORM_CLI_PATH:-terraform}
+
+         cluster_name=$($TF_BIN output -raw cluster_name 2>/dev/null || echo "")
+         cluster_endpoint=$($TF_BIN output -raw cluster_endpoint 2>/dev/null || echo "")
+
+         echo "Terraform Outputs:"
+         echo " - cluster_name: ${cluster_name:-<empty>}"
+         echo " - cluster_endpoint: ${cluster_endpoint:-<empty>}"
+
+         if [[ -z "$cluster_name" ]]; then
+            echo "❌ Missing cluster_name output!"
+            exit 1
+         fi
+
+        # Safely write outputs to GitHub
+         echo "cluster_name=${cluster_name}" >> $GITHUB_OUTPUT
+         echo "cluster_endpoint=${cluster_endpoint}" >> $GITHUB_OUTPUT
 
   
           #echo "Fetching Terraform outputs safely..."
