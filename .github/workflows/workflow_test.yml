@@ -46,31 +46,35 @@ jobs:
         working-directory: ./terraform
         shell: bash
         run: |
-          echo "Fetching Terraform outputs from remote S3 backend..."
+            echo "Fetching Terraform outputs..."
 
-          terraform init -input=false -backend-config="region=${AWS_REGION}" -reconfigure
+            terraform init -input=false -backend-config="region=${AWS_REGION}" -reconfigure
 
-          # Run terraform output and remove the first non-JSON line if it exists
-          terraform output -json > tf_outputs_raw.json
+            # Save outputs safely
+            terraform output -json > tf_outputs_raw.json 2>&1
 
-          # If the first line doesn't start with '{', strip it out
-          if ! head -n 1 tf_outputs_raw.json | grep -q '^{'; then
-            tail -n +2 tf_outputs_raw.json > tf_outputs.json
-          else
-            cp tf_outputs_raw.json tf_outputs.json
-          fi
+            # Extract only the valid JSON part
+            grep -o '{.*}' tf_outputs_raw.json > tf_outputs.json
 
-          echo "---- Cleaned Terraform Outputs ----"
-          cat tf_outputs.json
-          echo "-----------------------------------"
+            # Validate JSON
+            if ! jq -e . tf_outputs.json > /dev/null 2>&1; then
+              echo " Invalid JSON in tf_outputs.json"
+              cat tf_outputs_raw.json
+              exit 1
+            fi
 
-          echo "Parsed Outputs:"
-          echo " - cluster_name: $cluster_name"
-          echo " - cluster_endpoint: $cluster_endpoint"
+            # Parse outputs
+            cluster_name=$(jq -r '.cluster_name.value' tf_outputs.json)
+            cluster_endpoint=$(jq -r '.cluster_endpoint.value' tf_outputs.json)
 
-          # Export to GitHub outputs
-          echo "cluster_name=$cluster_name" >> $GITHUB_OUTPUT
-          echo "cluster_endpoint=$cluster_endpoint" >> $GITHUB_OUTPUT
+            echo "Parsed Outputs:"
+            echo " - cluster_name: $cluster_name"
+            echo " - cluster_endpoint: $cluster_endpoint"
+
+            # Export to GitHub outputs
+            echo "cluster_name=$cluster_name" >> $GITHUB_OUTPUT
+            echo "cluster_endpoint=$cluster_endpoint" >> $GITHUB_OUTPUT
+
 
   # karpenter:
   #   runs-on: ubuntu-latest
