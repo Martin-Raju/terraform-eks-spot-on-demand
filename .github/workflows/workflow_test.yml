@@ -44,8 +44,13 @@ jobs:
         shell: bash
         run: |
           echo "Fetching Terraform outputs safely..."
-          cluster_name=$(terraform output -raw cluster_name 2>/dev/null | grep -v "::debug::" || echo "unknown")
-          cluster_endpoint=$(terraform output -raw cluster_endpoint 2>/dev/null | grep -v "::debug::" || echo "unknown")
+          
+          # Use the real Terraform binary to avoid wrapper debug output
+          TERRAFORM_BIN=$(which terraform)
+          echo "Using Terraform binary: $TERRAFORM_BIN"
+
+          cluster_name=$($TERRAFORM_BIN output -raw cluster_name 2>/dev/null || echo "unknown")
+          cluster_endpoint=$($TERRAFORM_BIN output -raw cluster_endpoint 2>/dev/null || echo "unknown")
 
           echo "Terraform Outputs:"
           echo " - cluster_name: $cluster_name"
@@ -57,6 +62,7 @@ jobs:
 
           echo "cluster_name=$clean_cluster_name" >> $GITHUB_OUTPUT
           echo "cluster_endpoint=$clean_cluster_endpoint" >> $GITHUB_OUTPUT
+
     
   # karpenter:
   #   runs-on: ubuntu-latest
