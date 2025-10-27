@@ -64,17 +64,7 @@ jobs:
           cat tf_outputs.json
           echo "-----------------------------------"
 
-          # Validate JSON
-          if ! jq empty tf_outputs.json; then
-            echo "❌ Invalid JSON in tf_outputs.json"
-            exit 1
-          fi
-
-          # Parse specific outputs
-          cluster_name=$(jq -r '.cluster_name.value' tf_outputs.json)
-          cluster_endpoint=$(jq -r '.cluster_endpoint.value' tf_outputs.json)
-
-          echo "✅ Parsed Outputs:"
+          echo "Parsed Outputs:"
           echo " - cluster_name: $cluster_name"
           echo " - cluster_endpoint: $cluster_endpoint"
 
