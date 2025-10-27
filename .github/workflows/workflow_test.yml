@@ -48,18 +48,16 @@ jobs:
         run: |
             echo "Fetching Terraform outputs..."
 
+            # Reconfigure backend (for S3)
             terraform init -input=false -backend-config="region=${AWS_REGION}" -reconfigure
 
-            # Save outputs safely
-            terraform output -json > tf_outputs_raw.json 2>&1
+            # Capture Terraform JSON output directly (only stdout, no logs)
+            terraform output -json > tf_outputs.json
 
-            # Extract only the valid JSON part
-            grep -o '{.*}' tf_outputs_raw.json > tf_outputs.json
-
-            # Validate JSON
+            # Validate JSON before parsing
             if ! jq -e . tf_outputs.json > /dev/null 2>&1; then
-              echo " Invalid JSON in tf_outputs.json"
-              cat tf_outputs_raw.json
+              echo "Invalid JSON in tf_outputs.json"
+              cat tf_outputs.json
               exit 1
             fi
 
@@ -67,13 +65,16 @@ jobs:
             cluster_name=$(jq -r '.cluster_name.value' tf_outputs.json)
             cluster_endpoint=$(jq -r '.cluster_endpoint.value' tf_outputs.json)
 
+            # Display parsed values
             echo "Parsed Outputs:"
             echo " - cluster_name: $cluster_name"
             echo " - cluster_endpoint: $cluster_endpoint"
 
-            # Export to GitHub outputs
-            echo "cluster_name=$cluster_name" >> $GITHUB_OUTPUT
-            echo "cluster_endpoint=$cluster_endpoint" >> $GITHUB_OUTPUT
+            # Export for later GitHub Actions steps
+            {
+              echo "cluster_name=$cluster_name"
+              echo "cluster_endpoint=$cluster_endpoint"
+            } >> "$GITHUB_OUTPUT"
 
 
   # karpenter:
