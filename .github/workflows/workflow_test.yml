@@ -1,5 +1,4 @@
 name: Deploy EKS and Karpenter
-
 on:
   workflow_dispatch:
 
@@ -43,36 +42,14 @@ jobs:
         working-directory: ./terraform
         shell: bash
         run: |
-         echo "Fetching Terraform outputs safely..."
-
-         # Call Terraform directly using its CLI path if available
-         TF_BIN=${TERRAFORM_CLI_PATH:-terraform}
-
-         cluster_name=$($TF_BIN output -raw cluster_name 2>/dev/null || echo "")
-         cluster_endpoint=$($TF_BIN output -raw cluster_endpoint 2>/dev/null || echo "")
-
-         echo "Terraform Outputs:"
-         echo " - cluster_name: ${cluster_name:-<empty>}"
-         echo " - cluster_endpoint: ${cluster_endpoint:-<empty>}"
-
-         if [[ -z "$cluster_name" ]]; then
-            echo "❌ Missing cluster_name output!"
-            exit 1
-         fi
-
-        # Safely write outputs to GitHub
-         echo "cluster_name=${cluster_name}" >> $GITHUB_OUTPUT
-         echo "cluster_endpoint=${cluster_endpoint}" >> $GITHUB_OUTPUT
-
-  
-          #echo "Fetching Terraform outputs safely..."
-          #cluster_name=$(terraform output -raw cluster_name 2>/dev/null || echo "unknown")
-          #cluster_endpoint=$(terraform output -raw cluster_endpoint 2>/dev/null || echo "unknown")
-          #echo "Terraform Outputs:"
-          #echo " - cluster_name: $cluster_name"
-          #echo " - cluster_endpoint: $cluster_endpoint"
-          #echo "cluster_name=$cluster_name" >> $GITHUB_OUTPUT
-          #echo "cluster_endpoint=$cluster_endpoint" >> $GITHUB_OUTPUT
+          echo "Fetching Terraform outputs safely..."
+          cluster_name=$(terraform output -raw cluster_name 2>/dev/null || echo "unknown")
+          cluster_endpoint=$(terraform output -raw cluster_endpoint 2>/dev/null || echo "unknown")
+          echo "Terraform Outputs:"
+          echo " - cluster_name: $cluster_name"
+          echo " - cluster_endpoint: $cluster_endpoint"
+          echo "cluster_name=$cluster_name" >> $GITHUB_OUTPUT
+          echo "cluster_endpoint=$cluster_endpoint" >> $GITHUB_OUTPUT
 
   karpenter:
     runs-on: ubuntu-latest
