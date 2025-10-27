@@ -49,8 +49,11 @@ jobs:
           TF_CMD=$(which terraform)
 
           # Run quietly, strip debug and command lines
-          cluster_name=$($TF_CMD output -raw cluster_name 2>/dev/null | sed -E '/^\[command\]/d; /^::/d')
-          cluster_endpoint=$($TF_CMD output -raw cluster_endpoint 2>/dev/null | sed -E '/^\[command\]/d; /^::/d')
+          #cluster_name=$($TF_CMD output -raw cluster_name 2>/dev/null | sed -E '/^\[command\]/d; /^::/d')
+          #cluster_endpoint=$($TF_CMD output -raw cluster_endpoint 2>/dev/null | sed -E '/^\[command\]/d; /^::/d')
+          cluster_name=$($TF_CMD output -raw cluster_name 2>/dev/null | sed -E 's/::debug::Terraform exited with code 0\.//; /^\[command\]/d; /^::/d; s/[[:space:]]+$//')
+          cluster_endpoint=$($TF_CMD output -raw cluster_endpoint 2>/dev/null | sed -E 's/::debug::Terraform exited with code 0\.//; /^\[command\]/d; /^::/d; s/[[:space:]]+$//')
+
 
           # Validate outputs
           if [ -z "$cluster_name" ] || [ -z "$cluster_endpoint" ]; then
