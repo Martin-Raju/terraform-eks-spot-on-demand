@@ -35,8 +35,8 @@ jobs:
 
       - name: Terraform Apply
         working-directory: ./terraform
-        #run: terraform apply -auto-approve tfplan
-        run: terraform destroy -auto-approve
+        run: terraform apply -auto-approve tfplan
+        #run: terraform destroy -auto-approve
 
       - name: Install jq
         run: sudo apt-get install -y jq
@@ -54,9 +54,6 @@ jobs:
           echo "Cleaned Outputs:"
           echo " - cluster_name: $clean_cluster_name"
           echo " - cluster_endpoint: $clean_cluster_endpoint"
-
-          echo "c NAME = $clean_cluster_name"
-          echo "C ENDPOINT = $clean_cluster_endpoint"
 
           # Export outputs to GitHub Actions
           # echo "cluster_name=$clean_cluster_name" >> "$GITHUB_OUTPUT"
