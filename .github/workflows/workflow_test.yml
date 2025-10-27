@@ -48,9 +48,6 @@ jobs:
         run: |
             echo "Fetching Terraform outputs..."
 
-            # Change into Terraform working directory (update this path!)
-            cd terraform || exit 1
-
             # Initialize backend (for S3)
             terraform init -input=false -backend-config="region=${AWS_REGION}" -reconfigure
 
