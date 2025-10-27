@@ -35,8 +35,8 @@ jobs:
 
       - name: Terraform Apply
         working-directory: ./terraform
-        #run: terraform apply -auto-approve tfplan
-        run: terraform destroy -auto-approve
+        run: terraform apply -auto-approve tfplan
+        #run: terraform destroy -auto-approve
 
       - name: Export Terraform Outputs
         id: tf_outputs
@@ -45,14 +45,17 @@ jobs:
         run: |
           echo "Fetching Terraform outputs..."
 
-          # Run Terraform in quiet mode and clean the output
-          cluster_name=$(terraform output -raw cluster_name 2>/dev/null | grep -v '^::')
-          cluster_endpoint=$(terraform output -raw cluster_endpoint 2>/dev/null | grep -v '^::')
+          # Use the real terraform binary (bypass the wrapper)
+          TF_CMD=$(which terraform)
+
+          # Run quietly, strip debug and command lines
+          cluster_name=$($TF_CMD output -raw cluster_name 2>/dev/null | sed -E '/^\[command\]/d; /^::/d')
+          cluster_endpoint=$($TF_CMD output -raw cluster_endpoint 2>/dev/null | sed -E '/^\[command\]/d; /^::/d')
 
           # Validate outputs
           if [ -z "$cluster_name" ] || [ -z "$cluster_endpoint" ]; then
-            echo "Failed to fetch Terraform outputs. Check your output definitions."
-            terraform output
+            echo "Failed to fetch Terraform outputs. Check your Terraform output definitions."
+            $TF_CMD output
             exit 1
           fi
 
@@ -60,7 +63,7 @@ jobs:
           echo " - cluster_name: $cluster_name"
           echo " - cluster_endpoint: $cluster_endpoint"
 
-          # Export clean values for other jobs
+          # Export for next jobs
           {
             echo "cluster_name=$cluster_name"
             echo "cluster_endpoint=$cluster_endpoint"
