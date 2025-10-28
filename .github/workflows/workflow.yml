@@ -113,7 +113,7 @@ jobs:
         run: |
           helm upgrade --install karpenter oci://public.ecr.aws/karpenter/karpenter \
             --version 1.6.0 \
-            --namespace karpenter \
+            --namespace kube-system \
             --create-namespace \
             --set settings.clusterName=$CLUSTER_NAME \
             --set settings.clusterEndpoint=$CLUSTER_ENDPOINT \
