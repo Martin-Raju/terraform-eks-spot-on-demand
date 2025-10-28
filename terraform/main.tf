@@ -154,7 +154,7 @@ module "eks" {
       capacity_type  = "SPOT"
       min_size       = 1
       max_size       = 3
-      desired_size   = 1
+      desired_size   = 2
 
       labels = {
         # Used to ensure Karpenter runs on nodes that it does not manage
@@ -192,105 +192,6 @@ module "karpenter" {
   }
 }
 
-# -------------------------
-# Karpenter Helm Release
-# -------------------------
-
-# resource "helm_release" "karpenter" {
-# count    = var.eks_public_access_enabled ? 1 : 0
-# provider = helm
-# depends_on = [
-# module.eks,
-# module.karpenter
-# ]
-# namespace           = "kube-system"
-# name                = "karpenter"
-# repository          = "oci://public.ecr.aws/karpenter"
-# repository_username = data.aws_ecrpublic_authorization_token.token.user_name
-# repository_password = data.aws_ecrpublic_authorization_token.token.password
-# chart               = "karpenter"
-# version             = "1.6.0"
-# skip_crds           = false
-# create_namespace    = true
-# wait                = true
-
-# values = [
-# <<-EOT
-# nodeSelector:
-# karpenter.sh/controller: 'true'
-# dnsPolicy: Default
-# settings:
-# clusterName: ${module.eks.cluster_name}
-# clusterEndpoint: ${module.eks.cluster_endpoint}
-# interruptionQueue: ${module.karpenter.queue_name}
-# webhook:
-# enabled: false
-# EOT
-# ]
-# }
-
-#resource "kubernetes_manifest" "karpenter_provisioner_crd" {
-#  provider   = kubernetes.eks
-#  depends_on = [helm_release.karpenter]
-
-#  manifest = yamldecode(file("K8s/karpenter/karpenter-provisioners-crd.yaml"))
-#}
-
-#resource "kubernetes_manifest" "karpenter_provisioner" {
-#  provider   = kubernetes.eks
-#  depends_on = [helm_release.karpenter]
-
-#  manifest = yamldecode(file("K8s/karpenter/karpenter-provisioners.yaml"))
-#}
-
-
-# -------------------------
-# Karpenter Provisioner
-# -------------------------
-#resource "kubernetes_manifest" "karpenter_provisioner" {
-#  provider = kubernetes.eks
-#  depends_on = [
-#    time_sleep.wait_for_eks,
-
-#    helm_release.karpenter
-#  ]
-#  manifest = {
-#    apiVersion = "karpenter.sh/v1alpha5"
-#    kind       = "Provisioner"
-#    metadata = {
-#      name = "default"
-#    }
-#    spec = {
-#      ttlSecondsAfterEmpty = 30
-#      requirements = [
-#        {
-#          key      = "kubernetes.io/arch"
-#          operator = "In"
-#          values   = ["amd64"]
-#        },
-#        {
-#          key      = "karpenter.k8s.aws/instance-category"
-#          operator = "In"
-#          values   = ["m", "t"]
-#        }
-#      ]
-#      limits = {
-#        resources = {
-#          cpu    = "1000"
-#          memory = "200Gi"
-#        }
-#     }
-#      provider = {
-#        subnetSelector = {
-#          karpenter = var.cluster_name
-#        }
-#        securityGroupSelector = {
-#          karpenter = var.cluster_name
-#        }
-#      }
-#    }
-#  }
-#}
 # -------------------------
 # Bastion Security Group
 # -------------------------
@@ -362,6 +263,7 @@ module "bastion_ec2" {
     curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
     chmod +x kubectl
     sudo mv kubectl /usr/local/bin/
+
   EOF
 
   tags = {
