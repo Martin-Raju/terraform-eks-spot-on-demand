@@ -1,4 +1,4 @@
-name: Deploy EKS and Karpenter
+name: Destroy all
 on:
   workflow_dispatch:
 
