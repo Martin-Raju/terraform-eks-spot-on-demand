@@ -24,9 +24,9 @@ spec:
   # Provider-specific settings for AWS
   provider:
     subnetSelector:
-      karpenter: "prod-EKS-cluster"   # replace with your cluster name or tag
+      karpenter: ${CLUSTER_NAME}   # replace with your cluster name or tag
     securityGroupSelector:
-      karpenter: "prod-EKS-cluster"   # replace with your cluster name or tag
+      karpenter: ${CLUSTER_NAME}   # replace with your cluster name or tag
 
   # Labels applied to provisioned nodes
   labels:
