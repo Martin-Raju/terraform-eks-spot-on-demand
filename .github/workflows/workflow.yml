@@ -35,8 +35,8 @@ jobs:
 
       - name: Terraform Apply
         working-directory: ./terraform
-        #run: terraform apply -auto-approve tfplan
-        run: terraform destroy -auto-approve
+        run: terraform apply -auto-approve tfplan
+        #run: terraform destroy -auto-approve
 
       - name: Export Terraform Outputs
         id: tf_outputs
