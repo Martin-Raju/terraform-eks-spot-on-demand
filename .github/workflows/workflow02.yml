@@ -1,4 +1,4 @@
-name: Deploy EKS with Terraform
+name: Destroy all
 
 on:
   workflow_dispatch:
