@@ -35,8 +35,8 @@ jobs:
 
       - name: Terraform Apply
         working-directory: ./terraform
-        #run: terraform apply -auto-approve tfplan
-        run: terraform destroy -auto-approve
+        run: terraform apply -auto-approve tfplan
+        #run: terraform destroy -auto-approve
 
       - name: Export Terraform Outputs
         id: tf_outputs
@@ -113,12 +113,14 @@ jobs:
         run: |
           helm upgrade --install karpenter oci://public.ecr.aws/karpenter/karpenter \
             --version 1.6.0 \
-            --namespace kube-system \
+            --namespace karpenter \
             --create-namespace \
+            --wait \
             --set settings.clusterName=$CLUSTER_NAME \
             --set settings.clusterEndpoint=$CLUSTER_ENDPOINT \
             --set webhook.enabled=false \
-            --wait
+            --set serviceAccount.create=true \
+            --set serviceAccount.name=karpenter 
 
       - name: Apply Karpenter CRDs
         run: |
