@@ -1,0 +1,33 @@
+apiVersion: karpenter.sh/v1alpha5
+kind: Provisioner
+metadata:
+  name: default
+spec:
+  # Terminate nodes 30 seconds after they become empty
+  ttlSecondsAfterEmpty: 30
+
+  # Allowed instance requirements
+  requirements:
+    - key: "kubernetes.io/arch"
+      operator: In
+      values: ["amd64"]
+    - key: "karpenter.k8s.aws/instance-category"
+      operator: In
+      values: ["t"]  # matches your Terraform NG types t3.small, t3.medium
+
+  # Maximum resources Karpenter can provision
+  limits:
+    resources:
+      cpu: 1000
+      memory: 200
+
+  # Provider-specific settings for AWS
+  provider:
+    subnetSelector:
+      karpenter: "prod-EKS-cluster"   # replace with your cluster name or tag
+    securityGroupSelector:
+      karpenter: "prod-EKS-cluster"   # replace with your cluster name or tag
+
+  # Labels applied to provisioned nodes
+  labels:
+    karpenter.sh/provisioner-name: default

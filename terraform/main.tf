@@ -13,12 +13,13 @@ provider "aws" {
 }
 
 provider "kubernetes" {
+
   alias                  = "eks"
   host                   = module.eks.cluster_endpoint
   cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
 
   exec {
-    api_version = "client.authentication.k8s.io/v1beta1"
+    api_version = "client.authentication.k8s.io/v1"
     command     = "aws"
     args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
   }
@@ -30,7 +31,7 @@ provider "helm" {
     cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
 
     exec = {
-      api_version = "client.authentication.k8s.io/v1beta1"
+      api_version = "client.authentication.k8s.io/v1"
       command     = "aws"
       args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
     }
@@ -67,9 +68,10 @@ data "aws_ecrpublic_authorization_token" "token" {
 # -------------------------
 
 module "label" {
-  source      = "./modules/terraform-null-label-0.25.0"
-  name        = var.cluster_name
-  environment = var.environment
+  source           = "./modules/terraform-null-label-0.25.0"
+  name             = var.cluster_name
+  environment      = var.environment
+  label_value_case = "lower"
 }
 
 # -------------------------
@@ -150,7 +152,7 @@ module "eks" {
       ami_type       = "AL2023_x86_64_STANDARD"
       instance_types = ["t3.small", "t3.medium"]
       capacity_type  = "SPOT"
-      min_size       = 1
+      min_size       = 2
       max_size       = 3
       desired_size   = 2
 
@@ -188,55 +190,6 @@ module "karpenter" {
   node_iam_role_additional_policies = {
     AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
   }
-}
-
-# -------------------------
-# Wait for EKS API to settle 
-# -------------------------
-resource "time_sleep" "wait_for_eks" {
-  # depends on the EKS module finishing
-  depends_on = [module.eks]
-
-  # 60s is typically enough; increase if your CI is slow
-  create_duration = "180s"
-}
-
-# -------------------------
-# Karpenter Helm Release
-# -------------------------
-
-resource "helm_release" "karpenter" {
-  count    = var.eks_public_access_enabled ? 1 : 0
-  provider = helm
-  depends_on = [
-    module.eks,
-    module.karpenter,
-    time_sleep.wait_for_eks
-  ]
-  namespace           = "kube-system"
-  name                = "karpenter"
-  repository          = "oci://public.ecr.aws/karpenter"
-  repository_username = data.aws_ecrpublic_authorization_token.token.user_name
-  repository_password = data.aws_ecrpublic_authorization_token.token.password
-  chart               = "karpenter"
-  version             = "1.6.0"
-  skip_crds           = false
-  create_namespace    = true
-  wait                = true
-
-  values = [
-    <<-EOT
-    nodeSelector:
-      karpenter.sh/controller: 'true'
-    dnsPolicy: Default
-    settings:
-      clusterName: ${module.eks.cluster_name}
-      clusterEndpoint: ${module.eks.cluster_endpoint}
-      interruptionQueue: ${module.karpenter.queue_name}
-    webhook:
-      enabled: false
-    EOT
-  ]
 }
 
 # -------------------------
@@ -310,6 +263,7 @@ module "bastion_ec2" {
     curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
     chmod +x kubectl
     sudo mv kubectl /usr/local/bin/
+
   EOF
 
   tags = {
