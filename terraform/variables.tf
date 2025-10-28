@@ -44,3 +44,28 @@ variable "eks_public_access_enabled" {
   type        = bool
 }
 
+variable "instance_types" {
+  description = "List of instance types"
+  type        = list(string)
+}
+
+variable "min_size" {
+  description = "min_size"
+  type        = string
+}
+
+variable "max_size" {
+  description = "max_size"
+  type        = string
+}
+
+variable "desired_size" {
+  description = "desired_size"
+  type        = string
+}
+
+variable "bastion_instance_types" {
+  description = "List of instance types"
+  type        = string
+}
+

@@ -35,8 +35,8 @@ jobs:
 
       - name: Terraform Apply
         working-directory: ./terraform
-        #run: terraform apply -auto-approve tfplan
-        run: terraform destroy -auto-approve
+        run: terraform apply -auto-approve tfplan
+        #run: terraform destroy -auto-approve
 
       - name: Export Terraform Outputs
         id: tf_outputs
@@ -118,7 +118,7 @@ jobs:
             --set settings.clusterName=$CLUSTER_NAME \
             --set settings.clusterEndpoint=$CLUSTER_ENDPOINT \
             --set webhook.enabled=false \
-            --wait
+            --wait 
 
       - name: Apply Karpenter CRDs
         run: |
@@ -126,7 +126,9 @@ jobs:
 
       - name: Apply Karpenter Provisioner
         run: |
-          kubectl apply -f ./K8s/karpenter/karpenter-provisioners.yaml
+          echo "Applying Karpenter provisioner with cluster name: $CLUSTER_NAME"
+          sudo apt-get update -y && sudo apt-get install -y gettext-base
+          envsubst < ./K8s/karpenter/karpenter-provisioners.yaml | kubectl apply -f -
 
       - name: Verify Installation
         run: |
