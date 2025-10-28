@@ -115,12 +115,10 @@ jobs:
             --version 1.6.0 \
             --namespace karpenter \
             --create-namespace \
-            --wait \
             --set settings.clusterName=$CLUSTER_NAME \
             --set settings.clusterEndpoint=$CLUSTER_ENDPOINT \
             --set webhook.enabled=false \
-            --set serviceAccount.create=true \
-            --set serviceAccount.name=karpenter 
+            --wait 
 
       - name: Apply Karpenter CRDs
         run: |
