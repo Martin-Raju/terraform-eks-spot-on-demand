@@ -113,10 +113,12 @@ jobs:
         run: |
           helm upgrade --install karpenter oci://public.ecr.aws/karpenter/karpenter \
             --version 1.6.0 \
-            --namespace kube-system \
+            --namespace karpenter \
             --create-namespace \
             --set settings.clusterName=$CLUSTER_NAME \
             --set settings.clusterEndpoint=$CLUSTER_ENDPOINT \
+            --set serviceAccount.create=true \
+            --set serviceAccount.name=karpenter \
             --set webhook.enabled=false \
             --wait
 
