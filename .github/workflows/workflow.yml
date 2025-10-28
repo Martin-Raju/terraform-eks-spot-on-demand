@@ -128,7 +128,7 @@ jobs:
         run: |
           echo "Applying Karpenter provisioner with cluster name: $CLUSTER_NAME"
           sudo apt-get update -y && sudo apt-get install -y gettext-base
-          envsubst < ./K8s/karpenter/karpenter-provisioners.yaml.template | kubectl apply -f -
+          envsubst < ./K8s/karpenter/karpenter-provisioners.yaml | kubectl apply -f -
 
       - name: Verify Installation
         run: |
