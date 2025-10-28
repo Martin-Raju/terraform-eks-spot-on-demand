@@ -7,36 +7,36 @@ provider "aws" {
   region = var.aws_region
 }
 
-provider "aws" {
-  alias  = "virginia"
-  region = "us-east-1"
-}
+#provider "aws" {
+#  alias  = "virginia"
+#  region = "us-east-1"
+#}
 
-provider "kubernetes" {
+#provider "kubernetes" {
 
-  alias                  = "eks"
-  host                   = module.eks.cluster_endpoint
-  cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+#  alias                  = "eks"
+#  host                   = module.eks.cluster_endpoint
+#  cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
 
-  exec {
-    api_version = "client.authentication.k8s.io/v1"
-    command     = "aws"
-    args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
-  }
-}
+#  exec {
+#    api_version = "client.authentication.k8s.io/v1"
+#    command     = "aws"
+#    args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
+#  }
+#}
 
-provider "helm" {
-  kubernetes = {
-    host                   = module.eks.cluster_endpoint
-    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+#provider "helm" {
+#  kubernetes = {
+#    host                   = module.eks.cluster_endpoint
+#    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
 
-    exec = {
-      api_version = "client.authentication.k8s.io/v1"
-      command     = "aws"
-      args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
-    }
-  }
-}
+#    exec = {
+#      api_version = "client.authentication.k8s.io/v1"
+#      command     = "aws"
+#      args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
+#    }
+#  }
+#}
 
 # -------------------------
 # Data Block
@@ -150,11 +150,11 @@ module "eks" {
   eks_managed_node_groups = {
     karpenter = {
       ami_type       = "AL2023_x86_64_STANDARD"
-      instance_types = ["t3.small", "t3.medium"]
+      instance_types = var.instance_types
       capacity_type  = "SPOT"
-      min_size       = 2
-      max_size       = 3
-      desired_size   = 2
+      min_size       = var.min_size
+      max_size       = var.max_size
+      desired_size   = var.desired_size
 
       labels = {
         # Used to ensure Karpenter runs on nodes that it does not manage
@@ -243,7 +243,7 @@ module "bastion_ec2" {
   source                      = "./modules/terraform-aws-ec2-instance-6.1.1"
   name                        = "${module.label.environment}-bastion"
   ami                         = data.aws_ami.amazon_linux.id
-  instance_type               = "t3.micro"
+  instance_type               = var.bastion_instance_types
   key_name                    = var.ssh_key_name
   subnet_id                   = module.vpc.public_subnets[0]
   vpc_security_group_ids      = [module.bastion_sg.security_group_id]
