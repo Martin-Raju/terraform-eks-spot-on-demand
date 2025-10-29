@@ -18,8 +18,8 @@ spec:
   # Maximum resources Karpenter can provision
   limits:
     resources:
-      cpu: 1000
-      memory: 200
+      cpu: 18
+      memory: 16
 
   # Provider-specific settings for AWS
   provider:
