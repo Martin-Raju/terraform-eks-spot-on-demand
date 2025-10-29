@@ -136,7 +136,6 @@ module "eks" {
       }
     }
   }
-
   node_security_group_tags = {
     "karpenter.sh/discovery" = var.cluster_name
   }
@@ -155,14 +154,17 @@ module "karpenter" {
   source       = "./modules/terraform-aws-eks-21.3.2/modules/karpenter"
   cluster_name = module.eks.cluster_name
 
-  # Name needs to match role name passed to the EC2NodeClass
   node_iam_role_use_name_prefix   = false
   node_iam_role_name              = "${var.cluster_name}-karpenter"
   create_pod_identity_association = true
 
-  # Attach additional IAM policies to the Karpenter node IAM role
   node_iam_role_additional_policies = {
     AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+  }
+  tags = {
+
+    "karpenter.sh/discovery" = module.eks.cluster_name
+
   }
 }
 

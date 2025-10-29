@@ -14,6 +14,7 @@ jobs:
     outputs:
        cluster_name: ${{ steps.tf_outputs.outputs.cluster_name }}
        cluster_endpoint: ${{ steps.tf_outputs.outputs.cluster_endpoint }}
+       eks_public_access_enabled: ${{ steps.read_var.outputs.eks_public_access_enabled }}
 
 
     steps:
@@ -36,7 +37,12 @@ jobs:
       - name: Terraform Apply
         working-directory: ./terraform
         run: terraform apply -auto-approve tfplan
-        #run: terraform destroy -auto-approve
+      
+      - name: Read eks_public_access_enabled from tfvars
+        id: read_var
+        run: |
+          VALUE=$(grep -E '^eks_public_access_enabled' terraform/terraform.tfvars | awk -F'=' '{print $2}' | tr -d ' "')
+          echo "eks_public_access_enabled=$VALUE" >> "$GITHUB_OUTPUT"
 
       - name: Export Terraform Outputs
         id: tf_outputs
@@ -76,6 +82,7 @@ jobs:
   karpenter:
     runs-on: ubuntu-latest
     needs: terraform
+    if: ${{ needs.terraform.outputs.eks_public_access_enabled == 'true' }}
 
     env:
       AWS_REGION: ${{ secrets.AWS_REGION }}
@@ -120,9 +127,9 @@ jobs:
             --set webhook.enabled=false \
             --wait 
 
-      - name: Apply Karpenter CRDs
-        run: |
-          kubectl apply -f ./K8s/karpenter/karpenter-provisioners-crd.yaml
+      #- name: Apply Karpenter CRDs
+      #  run: |
+      #    kubectl apply -f ./K8s/karpenter/karpenter-provisioners-crd.yaml
 
       - name: Apply Karpenter Provisioner
         run: |
@@ -134,5 +141,3 @@ jobs:
         run: |
           echo "Checking Karpenter pods..."
           kubectl get pods -n kube-system | grep karpenter || true
-          echo "Checking Provisioners..."
-          kubectl get provisioners
