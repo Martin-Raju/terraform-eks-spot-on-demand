@@ -75,7 +75,6 @@ spec:
           operator: In
           values: ["t"]
   limits:
-    resources:
       cpu: "4"                                     
       memory: "6Gi"
   disruption:
