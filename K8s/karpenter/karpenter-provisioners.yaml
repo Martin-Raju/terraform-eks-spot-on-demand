@@ -1,33 +1,73 @@
-apiVersion: karpenter.sh/v1alpha5
-kind: Provisioner
+# apiVersion: karpenter.sh/v1alpha5
+# kind: Provisioner
+# metadata:
+#   name: default
+# spec:
+#   # Terminate nodes 30 seconds after they become empty
+#   ttlSecondsAfterEmpty: 30
+
+#   # Allowed instance requirements
+#   requirements:
+#     - key: "kubernetes.io/arch"
+#       operator: In
+#       values: ["amd64"]
+#     - key: "karpenter.k8s.aws/instance-category"
+#       operator: In
+#       values: ["t"]  # matches your Terraform NG types t3.small, t3.medium
+
+#   # Maximum resources Karpenter can provision
+#   limits:
+#     resources:
+#       cpu: 18
+#       memory: 16
+
+#   # Provider-specific settings for AWS
+#   provider:
+#     subnetSelector:
+#       karpenter: ${CLUSTER_NAME}   # replace with your cluster name or tag
+#     securityGroupSelector:
+#       karpenter: ${CLUSTER_NAME}   # replace with your cluster name or tag
+
+#   # Labels applied to provisioned nodes
+#   labels:
+#     karpenter.sh/provisioner-name: default
+
+# --- EC2NodeClass ---
+apiVersion: karpenter.k8s.aws/v1
+kind: EC2NodeClass
 metadata:
   name: default
 spec:
-  # Terminate nodes 30 seconds after they become empty
-  ttlSecondsAfterEmpty: 30
+  amiFamily: AL2
+  role: KarpenterNodeRole-${CLUSTER_NAME}
+  subnetSelectorTerms:
+    - tags:
+        karpenter: ${CLUSTER_NAME}
+  securityGroupSelectorTerms:
+    - tags:
+        karpenter: ${CLUSTER_NAME}
 
-  # Allowed instance requirements
-  requirements:
-    - key: "kubernetes.io/arch"
-      operator: In
-      values: ["amd64"]
-    - key: "karpenter.k8s.aws/instance-category"
-      operator: In
-      values: ["t"]  # matches your Terraform NG types t3.small, t3.medium
-
-  # Maximum resources Karpenter can provision
+---
+# --- NodePool ---
+apiVersion: karpenter.sh/v1
+kind: NodePool
+metadata:
+  name: default
+spec:
+  template:
+    spec:
+      nodeClassRef:
+        name: default
+      requirements:
+        - key: "kubernetes.io/arch"
+          operator: In
+          values: ["amd64"]
+        - key: "karpenter.k8s.aws/instance-category"
+          operator: In
+          values: ["t"]
+  disruption:
+    consolidateAfter: 30s
   limits:
     resources:
-      cpu: 18
-      memory: 16
-
-  # Provider-specific settings for AWS
-  provider:
-    subnetSelector:
-      karpenter: ${CLUSTER_NAME}   # replace with your cluster name or tag
-    securityGroupSelector:
-      karpenter: ${CLUSTER_NAME}   # replace with your cluster name or tag
-
-  # Labels applied to provisioned nodes
-  labels:
-    karpenter.sh/provisioner-name: default
+      cpu: 4
+      memory: 8Gi

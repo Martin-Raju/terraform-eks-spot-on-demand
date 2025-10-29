@@ -120,9 +120,9 @@ jobs:
             --set webhook.enabled=false \
             --wait 
 
-      - name: Apply Karpenter CRDs
-        run: |
-          kubectl apply -f ./K8s/karpenter/karpenter-provisioners-crd.yaml
+      #- name: Apply Karpenter CRDs
+      #  run: |
+      #    kubectl apply -f ./K8s/karpenter/karpenter-provisioners-crd.yaml
 
       - name: Apply Karpenter Provisioner
         run: |
