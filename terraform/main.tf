@@ -136,7 +136,6 @@ module "eks" {
       }
     }
   }
-
   node_security_group_tags = {
     "karpenter.sh/discovery" = var.cluster_name
   }
@@ -155,12 +154,10 @@ module "karpenter" {
   source       = "./modules/terraform-aws-eks-21.3.2/modules/karpenter"
   cluster_name = module.eks.cluster_name
 
-  # Name needs to match role name passed to the EC2NodeClass
   node_iam_role_use_name_prefix   = false
   node_iam_role_name              = "${var.cluster_name}-karpenter"
   create_pod_identity_association = true
-  service_account_role_name       = "${var.cluster_name}-karpenter-controller"
-  # Attach additional IAM policies to the Karpenter node IAM role
+
   node_iam_role_additional_policies = {
     AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
   }
@@ -170,28 +167,6 @@ module "karpenter" {
 
   }
 }
-
-data "aws_iam_role" "karpenter_irsa" {
-  name = "${var.cluster_name}-karpenter"
-}
-
-resource "aws_iam_role_policy" "karpenter_passrole" {
-  name = "AllowPassRoleForKarpenterNodes"
-  #role = data.aws_iam_role.karpenter_irsa.name
-  role = "${var.cluster_name}-karpenter-controller"
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = ["iam:PassRole"]
-        Resource = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.cluster_name}-karpenter"
-      }
-    ]
-  })
-}
-
-
 
 # -------------------------
 # Bastion Security Group
