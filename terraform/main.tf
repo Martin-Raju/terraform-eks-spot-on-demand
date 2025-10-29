@@ -164,6 +164,11 @@ module "karpenter" {
   node_iam_role_additional_policies = {
     AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
   }
+  tags = {
+
+    "karpenter.sh/discovery" = module.eks.cluster_name
+
+  }
 }
 
 # -------------------------
