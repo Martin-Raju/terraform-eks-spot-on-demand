@@ -39,13 +39,17 @@ metadata:
   name: default
 spec:
   amiFamily: AL2
-  role: KarpenterNodeRole-${CLUSTER_NAME}
+  role: KarpenterNodeRole-prod-EKS-cluster      # replace with your actual IAM role name
   subnetSelectorTerms:
     - tags:
-        karpenter: ${CLUSTER_NAME}
+        karpenter: prod-EKS-cluster
   securityGroupSelectorTerms:
     - tags:
-        karpenter: ${CLUSTER_NAME}
+        karpenter: prod-EKS-cluster
+  amiSelectorTerms:
+    - id: ami-05473caa821530341                  # (example) add your EKS worker AMI ID here
+  tags:
+    Name: karpenter-node
 
 ---
 # --- NodePool ---
@@ -65,9 +69,10 @@ spec:
         - key: "karpenter.k8s.aws/instance-category"
           operator: In
           values: ["t"]
+  limits:
+    cpu: "4"
+    memory: "8Gi"
   disruption:
     consolidateAfter: 30s
-  limits:
-    resources:
-      cpu: 4
-      memory: 8Gi
+
+
