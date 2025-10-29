@@ -159,7 +159,7 @@ module "karpenter" {
   node_iam_role_use_name_prefix   = false
   node_iam_role_name              = "${var.cluster_name}-karpenter"
   create_pod_identity_association = true
-
+  service_account_role_name       = "${var.cluster_name}-karpenter-controller"
   # Attach additional IAM policies to the Karpenter node IAM role
   node_iam_role_additional_policies = {
     AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
@@ -177,8 +177,8 @@ data "aws_iam_role" "karpenter_irsa" {
 
 resource "aws_iam_role_policy" "karpenter_passrole" {
   name = "AllowPassRoleForKarpenterNodes"
-  role = data.aws_iam_role.karpenter_irsa.name
-
+  #role = data.aws_iam_role.karpenter_irsa.name
+  role = "${var.cluster_name}-karpenter-controller"
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
