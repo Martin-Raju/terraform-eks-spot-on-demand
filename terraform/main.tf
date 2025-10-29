@@ -171,9 +171,13 @@ module "karpenter" {
   }
 }
 
+data "aws_iam_role" "karpenter_irsa" {
+  name = "${var.cluster_name}-karpenter"
+}
+
 resource "aws_iam_role_policy" "karpenter_passrole" {
   name = "AllowPassRoleForKarpenterNodes"
-  role = module.karpenter.irsa_name
+  role = data.aws_iam_role.karpenter_irsa.name
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -186,6 +190,7 @@ resource "aws_iam_role_policy" "karpenter_passrole" {
     ]
   })
 }
+
 
 
 # -------------------------
