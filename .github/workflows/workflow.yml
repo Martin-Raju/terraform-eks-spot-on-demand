@@ -134,5 +134,3 @@ jobs:
         run: |
           echo "Checking Karpenter pods..."
           kubectl get pods -n kube-system | grep karpenter || true
-          echo "Checking Provisioners..."
-          kubectl get provisioners
