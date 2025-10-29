@@ -171,6 +171,23 @@ module "karpenter" {
   }
 }
 
+resource "aws_iam_role_policy" "karpenter_passrole" {
+  name = "AllowPassRoleForKarpenterNodes"
+  role = module.karpenter.controller_iam_role_name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = ["iam:PassRole"]
+        Resource = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.cluster_name}-karpenter"
+      }
+    ]
+  })
+}
+
+
 # -------------------------
 # Bastion Security Group
 # -------------------------
