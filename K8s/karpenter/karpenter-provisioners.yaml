@@ -39,8 +39,7 @@ metadata:
   name: default
 spec:
   amiFamily: AL2
-  role: KarpenterController-20251029081244962100000001 
-  #KarpenterNodeRole-prod-EKS-cluster      # replace with your actual IAM role name
+  role: KarpenterNodeRole-prod-EKS-cluster      # replace with your actual IAM role name
   subnetSelectorTerms:
     - tags:
         karpenter: prod-EKS-cluster
