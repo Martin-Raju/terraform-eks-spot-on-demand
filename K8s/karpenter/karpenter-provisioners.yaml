@@ -1,37 +1,3 @@
-# apiVersion: karpenter.sh/v1alpha5
-# kind: Provisioner
-# metadata:
-#   name: default
-# spec:
-#   
-#   ttlSecondsAfterEmpty: 30
-
-#   # Allowed instance requirements
-#   requirements:
-#     - key: "kubernetes.io/arch"
-#       operator: In
-#       values: ["amd64"]
-#     - key: "karpenter.k8s.aws/instance-category"
-#       operator: In
-#       values: ["t"]  
-
-#   # Maximum resources Karpenter can provision
-#   limits:
-#     resources:
-#       cpu: 18
-#       memory: 16
-
-#   # Provider-specific settings for AWS
-#   provider:
-#     subnetSelector:
-#       karpenter: ${CLUSTER_NAME}   # replace with your cluster name or tag
-#     securityGroupSelector:
-#       karpenter: ${CLUSTER_NAME}   # replace with your cluster name or tag
-
-#   # Labels applied to provisioned nodes
-#   labels:
-#     karpenter.sh/provisioner-name: default
-
 
 # --- EC2NodeClass ---
 apiVersion: karpenter.k8s.aws/v1
