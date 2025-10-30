@@ -68,21 +68,21 @@ module "vpc" {
   enable_dns_support   = true
 
   tags = {
-    "kubernetes.io/cluster/${var.cluster_name}" = "shared"
+    "kubernetes.io/cluster/${module.eks.cluster_name}" = "shared"
     "Environment"                               = var.environment
 
   }
 
   public_subnet_tags = {
-    "kubernetes.io/cluster/${var.cluster_name}" = "shared"
+    "kubernetes.io/cluster/${module.eks.cluster_name}" = "shared"
     "kubernetes.io/role/elb"                    = "1"
-    "karpenter.sh/discovery"                    = var.cluster_name
+    "karpenter.sh/discovery"                    = module.eks.cluster_name
   }
 
   private_subnet_tags = {
-    "kubernetes.io/cluster/${var.cluster_name}" = "shared"
+    "kubernetes.io/cluster/${module.eks.cluster_name}" = "shared"
     "kubernetes.io/role/internal-elb"           = "1"
-    "karpenter.sh/discovery"                    = var.cluster_name
+    "karpenter.sh/discovery"                    = module.eks.cluster_name
   }
 }
 
@@ -137,12 +137,12 @@ module "eks" {
     }
   }
   node_security_group_tags = {
-    "karpenter.sh/discovery" = var.cluster_name
+    "karpenter.sh/discovery" = module.eks.cluster_name
   }
 
 
   tags = {
-    cluster = var.cluster_name
+    cluster = module.eks.cluster_name
   }
 }
 
@@ -155,7 +155,7 @@ module "karpenter" {
   cluster_name = module.eks.cluster_name
 
   node_iam_role_use_name_prefix   = false
-  node_iam_role_name              = "${var.cluster_name}-karpenter"
+  node_iam_role_name              = "${module.eks.cluster_name}-karpenter"
   create_pod_identity_association = true
 
   node_iam_role_additional_policies = {
@@ -171,7 +171,7 @@ module "karpenter" {
 # Karpenter Node IAM Role (for EC2 nodes it launches)
 # ==========================================================
 resource "aws_iam_role" "karpenter_node_role" {
-  name = "${var.cluster_name}-karpenter"
+  name = module.eks.cluster_name-karpenter
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -210,7 +210,7 @@ resource "aws_iam_role_policy_attachment" "karpenter_ssm" {
 # ==========================================================
 resource "aws_iam_role_policy" "karpenter_controller_passrole" {
   name = "AllowPassRoleForKarpenter"
-  role = "${var.cluster_name}-karpenter"
+  role = module.eks.cluster_name-karpenter
 
   policy = jsonencode({
     Version = "2012-10-17"
