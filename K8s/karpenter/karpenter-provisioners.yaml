@@ -6,7 +6,8 @@ metadata:
   name: default
 spec:
   amiFamily: AL2023
-  role: ${CLUSTER_NAME}-karpenter                 
+  role: ${CLUSTER_NAME}-karpenter
+  instanceProfile: ${CLUSTER_NAME}_15843455441266977890                 
   subnetSelectorTerms:
     - tags:
         karpenter.sh/discovery: ${CLUSTER_NAME}
@@ -14,7 +15,6 @@ spec:
     - tags:
         karpenter.sh/discovery: ${CLUSTER_NAME}
   role: "${CLUSTER_NAME}-karpenter"
-  instanceProfile: ${CLUSTER_NAME}_15843455441266977890
   amiSelectorTerms:
     - id: ami-05473caa821530341                    
   tags:
