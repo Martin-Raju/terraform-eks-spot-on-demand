@@ -163,9 +163,12 @@ module "karpenter" {
   }
   tags = {
 
-    "karpenter.sh/discovery" = var.cluster_name
+    "karpenter.sh/discovery" = module.eks.cluster_name
 
   }
+  depends_on = [
+    module.eks
+  ]
 }
 
 
