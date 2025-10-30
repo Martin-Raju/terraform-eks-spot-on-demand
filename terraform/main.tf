@@ -210,7 +210,7 @@ resource "aws_iam_role_policy_attachment" "karpenter_ssm" {
 # ==========================================================
 resource "aws_iam_role_policy" "karpenter_controller_passrole" {
   name = "AllowPassRoleForKarpenter"
-  role = module.karpenter.irsa_name
+  role = module.karpenter.irsa_role_name
 
   policy = jsonencode({
     Version = "2012-10-17"
