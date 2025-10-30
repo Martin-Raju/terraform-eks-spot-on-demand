@@ -68,21 +68,21 @@ module "vpc" {
   enable_dns_support   = true
 
   tags = {
-    "kubernetes.io/cluster/${module.eks.cluster_name}" = "shared"
+    "kubernetes.io/cluster/${var.cluster_name}" = "shared"
     "Environment"                               = var.environment
 
   }
 
   public_subnet_tags = {
-    "kubernetes.io/cluster/${module.eks.cluster_name}" = "shared"
+    "kubernetes.io/cluster/${var.cluster_name}" = "shared"
     "kubernetes.io/role/elb"                    = "1"
-    "karpenter.sh/discovery"                    = module.eks.cluster_name
+    "karpenter.sh/discovery"                    = var.cluster_name
   }
 
   private_subnet_tags = {
-    "kubernetes.io/cluster/${module.eks.cluster_name}" = "shared"
+    "kubernetes.io/cluster/${var.cluster_name}" = "shared"
     "kubernetes.io/role/internal-elb"           = "1"
-    "karpenter.sh/discovery"                    = module.eks.cluster_name
+    "karpenter.sh/discovery"                    = var.cluster_name
   }
 }
 
@@ -137,12 +137,12 @@ module "eks" {
     }
   }
   node_security_group_tags = {
-    "karpenter.sh/discovery" = module.eks.cluster_name
+    "karpenter.sh/discovery" = var.cluster_name
   }
 
 
   tags = {
-    cluster = module.eks.cluster_name
+    cluster = var.cluster_name
   }
 }
 
@@ -155,7 +155,7 @@ module "karpenter" {
   cluster_name = module.eks.cluster_name
 
   node_iam_role_use_name_prefix   = false
-  node_iam_role_name              = "${module.eks.cluster_name}-karpenter"
+  node_iam_role_name              = "${var.cluster_name}-karpenter"
   create_pod_identity_association = true
 
   node_iam_role_additional_policies = {
@@ -167,6 +167,7 @@ module "karpenter" {
 
   }
 }
+
 
 # -------------------------
 # Bastion Security Group
