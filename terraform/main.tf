@@ -41,12 +41,12 @@ data "aws_ecrpublic_authorization_token" "token" {
 # Label Module
 # -------------------------
 
-module "label" {
-  source           = "./modules/terraform-null-label-0.25.0"
-  name             = var.cluster_name
-  environment      = var.environment
-  label_value_case = "lower"
-}
+#module "label" {
+#  source           = "./modules/terraform-null-label-0.25.0"
+#  name             = var.cluster_name
+#  environment      = var.environment
+#  label_value_case = "lower"
+#}
 
 # -------------------------
 # VPC Module
@@ -55,7 +55,7 @@ module "label" {
 module "vpc" {
   source = "./modules/terraform-aws-vpc-6.4.0"
 
-  name = "${module.label.environment}-vpc"
+  name = "${var.cluster_name}-vpc"
   cidr = var.vpc_cidr
 
   azs             = data.aws_availability_zones.available.names
@@ -92,7 +92,7 @@ module "vpc" {
 
 module "eks" {
   source                 = "./modules/terraform-aws-eks-21.3.2"
-  name                   = "${module.label.environment}-EKS-cluster"
+  name                   = var.cluster_name
   kubernetes_version     = var.kubernetes_version
   endpoint_public_access = var.eks_public_access_enabled
   #endpoint_public_access                   = false
@@ -152,7 +152,7 @@ module "eks" {
 
 module "karpenter" {
   source       = "./modules/terraform-aws-eks-21.3.2/modules/karpenter"
-  cluster_name = module.eks.cluster_name
+  cluster_name = var.cluster_name
 
   node_iam_role_use_name_prefix   = false
   node_iam_role_name              = "${var.cluster_name}-karpenter"
@@ -163,7 +163,7 @@ module "karpenter" {
   }
   tags = {
 
-    "karpenter.sh/discovery" = module.eks.cluster_name
+    "karpenter.sh/discovery" = var.cluster_name
 
   }
 }
@@ -174,7 +174,7 @@ module "karpenter" {
 # -------------------------
 module "bastion_sg" {
   source      = "./modules/terraform-aws-security-group-5.3.0"
-  name        = "${module.label.environment}-bastion-sg"
+  name        = "${var.cluster_name}-bastion-sg"
   description = "Security group for Bastion host"
   vpc_id      = module.vpc.vpc_id
 
@@ -218,7 +218,7 @@ module "bastion_sg" {
 
 module "bastion_ec2" {
   source                      = "./modules/terraform-aws-ec2-instance-6.1.1"
-  name                        = "${module.label.environment}-bastion"
+  name                        = "${var.cluster_name}-bastion"
   ami                         = data.aws_ami.amazon_linux.id
   instance_type               = var.bastion_instance_types
   key_name                    = var.ssh_key_name
