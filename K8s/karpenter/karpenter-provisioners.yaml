@@ -41,8 +41,8 @@ spec:
           operator: In
           values: ["t"]
   limits:
-      cpu: "4"                                     
-      memory: "6Gi"
+      cpu: "100"                                     
+      memory: "200Gi"
   disruption:
     consolidateAfter: 30s
 
