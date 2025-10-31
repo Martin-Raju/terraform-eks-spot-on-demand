@@ -13,6 +13,8 @@ spec:
   securityGroupSelectorTerms:
     - tags:
         karpenter.sh/discovery: ${CLUSTER_NAME}
+  amiSelectorTerms:
+    - name: "*"
   # amiSelectorTerms:
   #   - id: ami-05473caa821530341                    
   tags:
