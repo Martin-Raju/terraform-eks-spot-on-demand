@@ -34,24 +34,26 @@ spec:
         group: karpenter.k8s.aws
         kind: EC2NodeClass
         name: default
+      instanceTypes:
+        - t3.medium
+        - t3.small
+
       requirements:
         - key: "kubernetes.io/arch"
           operator: In
           values: ["amd64"]
-        - key: "karpenter.k8s.aws/instance-category"
-          operator: In
-          values: ["t"]
-        - key: "karpenter.k8s.aws/instance-type"
-          operator: In
-          values:
-            - "t3.small"
-            - "t3.medium"
+        # - key: "karpenter.k8s.aws/instance-category"
+        #   operator: In
+        #   values: ["t"]
+        # - key: "karpenter.k8s.aws/instance-type"
+        #   operator: In
+        #   values:
+        #     - "t3.small"
+        #     - "t3.medium"
             
   limits:
-      cpu: "1000"                                     
-      memory: "200Gi"
+      cpu: "10"                                     
+      memory: "20Gi"
   disruption:
     consolidateAfter: 30s
-
-
 
