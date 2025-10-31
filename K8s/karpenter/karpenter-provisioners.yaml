@@ -40,10 +40,13 @@ spec:
           values: ["amd64"]
         - key: "karpenter.k8s.aws/instance-category"
           operator: In
-          values: ["m","t"]
-        - key: "karpenter.k8s.aws/instance-size"
-          operator: NotIn
-          values: ["nano", "micro", "small"]
+          values: ["t"]
+        - key: "karpenter.k8s.aws/instance-type"
+          operator: In
+          values:
+            - "t3.small"
+            - "t3.medium"
+            
   limits:
       cpu: "1000"                                     
       memory: "200Gi"
