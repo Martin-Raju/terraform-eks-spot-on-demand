@@ -58,5 +58,4 @@ spec:
   #     memory: "2Gi"
   disruption:
     consolidateAfter: 30s
-    ttlSecondsAfterEmpty: 60
 
