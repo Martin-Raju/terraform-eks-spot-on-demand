@@ -54,8 +54,8 @@ spec:
         #     - "t3.medium"
             
   limits:
-      cpu: "10"                                     
-      memory: "20Gi"
+      cpu: "1"                                     
+      memory: "2Gi"
   disruption:
     consolidateAfter: 30s
 
