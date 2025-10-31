@@ -6,8 +6,7 @@ metadata:
   name: default
 spec:
   amiFamily: AL2023
-  role: ${CLUSTER_NAME}-karpenter
-  #instanceProfile: ${CLUSTER_NAME}_15843455441266977890                 
+  role: ${CLUSTER_NAME}-karpenter               
   subnetSelectorTerms:
     - tags:
         karpenter.sh/discovery: ${CLUSTER_NAME}
@@ -43,19 +42,6 @@ spec:
         - key: "kubernetes.io/arch"
           operator: In
           values: ["amd64"]
-          
-        # - key: "karpenter.k8s.aws/instance-category"
-        #   operator: In
-        #   values: ["t"]
-        # - key: "karpenter.k8s.aws/instance-type"
-        #   operator: In
-        #   values:
-        #     - "t3.small"
-        #     - "t3.medium"
-            
-  # limits:
-  #     cpu: "1"                                     
-  #     memory: "2Gi"
   disruption:
     consolidateAfter: 30s
 
