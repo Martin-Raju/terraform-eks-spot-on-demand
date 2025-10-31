@@ -53,9 +53,10 @@ spec:
         #     - "t3.small"
         #     - "t3.medium"
             
-  limits:
-      cpu: "1"                                     
-      memory: "2Gi"
+  # limits:
+  #     cpu: "1"                                     
+  #     memory: "2Gi"
   disruption:
     consolidateAfter: 30s
+    ttlSecondsAfterEmpty: 60
 
