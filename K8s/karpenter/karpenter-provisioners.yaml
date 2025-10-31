@@ -40,9 +40,12 @@ spec:
           values: ["amd64"]
         - key: "karpenter.k8s.aws/instance-category"
           operator: In
-          values: ["t"]
+          values: ["m","t"]
+        - key: "karpenter.k8s.aws/instance-size"
+          operator: NotIn
+          values: ["nano", "micro", "small"]
   limits:
-      cpu: "100"                                     
+      cpu: "1000"                                     
       memory: "200Gi"
   disruption:
     consolidateAfter: 30s
