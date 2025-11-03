@@ -6,8 +6,6 @@ metadata:
   name: default
 spec:
   amiFamily: AL2023
-  amiSelectorTerms:
-     - id: "*"
   role: ${CLUSTER_NAME}-karpenter               
   subnetSelectorTerms:
     - tags:
@@ -15,8 +13,8 @@ spec:
   securityGroupSelectorTerms:
     - tags:
         karpenter.sh/discovery: ${CLUSTER_NAME}
-  #amiSelectorTerms:
-  #  - name: "*"
+  amiSelectorTerms:
+    - name: "*"
   blockDeviceMappings:
     - deviceName: /dev/xvda
       ebs:
