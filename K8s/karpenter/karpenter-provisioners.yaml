@@ -15,6 +15,12 @@ spec:
         karpenter.sh/discovery: ${CLUSTER_NAME}
   amiSelectorTerms:
     - name: "*"
+  blockDeviceMappings:
+    - deviceName: /dev/xvda
+      ebs:
+        volumeSize: 20Gi
+        volumeType: gp3
+        deleteOnTermination: true
   # amiSelectorTerms:
   #   - id: ami-05473caa821530341                    
   tags:
