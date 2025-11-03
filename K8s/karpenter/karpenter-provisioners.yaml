@@ -6,6 +6,8 @@ metadata:
   name: default
 spec:
   amiFamily: AL2023
+  amiSelectorTerms:
+     - id: "*"
   role: ${CLUSTER_NAME}-karpenter               
   subnetSelectorTerms:
     - tags:
