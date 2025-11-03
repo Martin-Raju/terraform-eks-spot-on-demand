@@ -13,8 +13,8 @@ spec:
   securityGroupSelectorTerms:
     - tags:
         karpenter.sh/discovery: ${CLUSTER_NAME}
-  amiSelectorTerms:
-    - name: "*"
+  #amiSelectorTerms:
+  #  - name: "*"
   blockDeviceMappings:
     - deviceName: /dev/xvda
       ebs:
