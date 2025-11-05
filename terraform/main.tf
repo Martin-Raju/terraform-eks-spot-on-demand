@@ -171,6 +171,14 @@ module "karpenter" {
   ]
 }
 
+resource "aws_iam_instance_profile" "karpenter_profile" {
+  name = "${var.cluster_name}_instance_profile"
+  role = "${var.cluster_name}-karpenter"
+
+  tags = {
+    Name = "${var.cluster_name}-karpenter-profile"
+  }
+}
 
 # -------------------------
 # Bastion Security Group
