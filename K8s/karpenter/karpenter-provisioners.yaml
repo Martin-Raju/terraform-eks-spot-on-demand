@@ -53,4 +53,7 @@ spec:
           values: ["amd64"]
   disruption:
     consolidateAfter: 30s
+    expireAfter: 2m
+    consolidationPolicy: WhenEmpty
+    
 
