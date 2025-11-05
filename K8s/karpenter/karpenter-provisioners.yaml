@@ -8,7 +8,8 @@ spec:
   amiFamily: AL2023
   amiSelectorTerms:
     - alias: al2023@latest
-  role: ${CLUSTER_NAME}-karpenter               
+  role: ${CLUSTER_NAME}-karpenter
+  instanceProfile: ${CLUSTER_NAME}_instance_profile
   subnetSelectorTerms:
     - tags:
         karpenter.sh/discovery: ${CLUSTER_NAME}
