@@ -178,6 +178,9 @@ resource "aws_iam_instance_profile" "karpenter_profile" {
   tags = {
     Name = "${var.cluster_name}-karpenter-profile"
   }
+  depends_on = [
+    module.karpenter
+  ]
 }
 
 # -------------------------
