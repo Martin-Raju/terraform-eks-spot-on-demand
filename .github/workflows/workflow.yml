@@ -119,7 +119,7 @@ jobs:
       - name: Install Karpenter Helm Chart
         run: |
           helm upgrade --install karpenter oci://public.ecr.aws/karpenter/karpenter \
-            --version 1.6.0 \
+            --version 1.6.5 \
             --namespace kube-system \
             --create-namespace \
             --set settings.clusterName=$CLUSTER_NAME \
