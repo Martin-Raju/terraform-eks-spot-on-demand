@@ -196,7 +196,7 @@ module "karpenter" {
 
   }
   depends_on = [
-    module.eks
+    module.eks,
     aws_iam_instance_profile.karpenter_profile
   ]
 }
