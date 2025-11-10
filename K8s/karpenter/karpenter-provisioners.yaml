@@ -1,4 +1,3 @@
-
 # --- EC2NodeClass ---
 apiVersion: karpenter.k8s.aws/v1
 kind: EC2NodeClass
@@ -9,7 +8,6 @@ spec:
   amiSelectorTerms:
     - alias: al2023@latest
   role: ${CLUSTER_NAME}-karpenter
-  #instanceProfile: ${CLUSTER_NAME}_instance_profile
   subnetSelectorTerms:
     - tags:
         karpenter.sh/discovery: ${CLUSTER_NAME}
@@ -19,47 +17,118 @@ spec:
   blockDeviceMappings:
     - deviceName: /dev/xvda
       ebs:
-        volumeSize: 120Gi
+        volumeSize: 120
         volumeType: gp3
         deleteOnTermination: true
-  #amiSelectorTerms:
-  #  - id: ami-05473caa821530341                    
   tags:
     Name: karpenter-node
     managed-by: karpenter
 
 ---
 
-# --- NodePool ---
-apiVersion: karpenter.sh/v1
-kind: NodePool
+# --- Provisioner ---
+apiVersion: karpenter.sh/v1alpha5
+kind: Provisioner
 metadata:
   name: default
 spec:
-  template:
-    spec:
-      nodeClassRef:
-        group: karpenter.k8s.aws
-        kind: EC2NodeClass
-        name: default
-      requirements:
-        - key: "node.kubernetes.io/instance-type"
-          operator: In
-          values:
-              - t3a.medium
-              - t3a.small
-              - t3.medium
-              - t3.small
-        - key: "kubernetes.io/arch"
-          operator: In
-          values: 
-              - amd64
-       -  key: "kubernetes.io/lifecycle"
-          operator: In
-          values:
-              - spot
-      labels:
-        karpenter.sh/provisioner-name: default
-  disruption:
-    consolidateAfter: 30s
-    consolidationPolicy: WhenEmpty
+  cluster:
+    name: ${CLUSTER_NAME}
+  ttlSecondsAfterEmpty: 300
+  requirements:
+    - key: "node.kubernetes.io/instance-type"
+      operator: In
+      values:
+        - t3a.medium
+        - t3a.small
+        - t3.medium
+        - t3.small
+    - key: "kubernetes.io/arch"
+      operator: In
+      values:
+        - amd64
+    - key: "kubernetes.io/lifecycle"
+      operator: In
+      values:
+        - spot
+  labels:
+    karpenter.sh/provisioner-name: default
+  provider:
+    instanceProfile: ${CLUSTER_NAME}-karpenter
+    subnetSelector:
+      karpenter.sh/discovery: ${CLUSTER_NAME}
+    securityGroupSelector:
+      karpenter.sh/discovery: ${CLUSTER_NAME}
+    blockDeviceMappings:
+      - deviceName: /dev/xvda
+        ebs:
+          volumeSize: 120
+          volumeType: gp3
+          deleteOnTermination: true
+  consolidation:
+    enabled: true
+
+# # --- EC2NodeClass ---
+# apiVersion: karpenter.k8s.aws/v1
+# kind: EC2NodeClass
+# metadata:
+#   name: default
+# spec:
+#   amiFamily: AL2023
+#   amiSelectorTerms:
+#     - alias: al2023@latest
+#   role: ${CLUSTER_NAME}-karpenter
+#   #instanceProfile: ${CLUSTER_NAME}_instance_profile
+#   subnetSelectorTerms:
+#     - tags:
+#         karpenter.sh/discovery: ${CLUSTER_NAME}
+#   securityGroupSelectorTerms:
+#     - tags:
+#         karpenter.sh/discovery: ${CLUSTER_NAME}
+#   blockDeviceMappings:
+#     - deviceName: /dev/xvda
+#       ebs:
+#         volumeSize: 120Gi
+#         volumeType: gp3
+#         deleteOnTermination: true
+#   #amiSelectorTerms:
+#   #  - id: ami-05473caa821530341                    
+#   tags:
+#     Name: karpenter-node
+#     managed-by: karpenter
+
+# ---
+
+# # --- NodePool ---
+# apiVersion: karpenter.sh/v1
+# kind: NodePool
+# metadata:
+#   name: default
+# spec:
+#   template:
+#     spec:
+#       nodeClassRef:
+#         group: karpenter.k8s.aws
+#         kind: EC2NodeClass
+#         name: default
+#       requirements:
+#         - key: "node.kubernetes.io/instance-type"
+#           operator: In
+#           values:
+#               - t3a.medium
+#               - t3a.small
+#               - t3.medium
+#               - t3.small
+#         - key: "kubernetes.io/arch"
+#           operator: In
+#           values: 
+#               - amd64
+#        -  key: "kubernetes.io/lifecycle"
+#           operator: In
+#           values:
+#               - spot
+#       labels:
+#         karpenter.sh/provisioner-name: default
+#   disruption:
+#     consolidateAfter: 30s
+#     consolidationPolicy: WhenEmpty
