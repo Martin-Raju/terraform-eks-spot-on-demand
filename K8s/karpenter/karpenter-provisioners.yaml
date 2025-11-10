@@ -52,9 +52,12 @@ spec:
               - t3.small
         - key: "kubernetes.io/arch"
           operator: In
-          values: ["amd64"]
-      capacityType: SPOT
-      expireAfter: 5m
+          values: 
+              - amd64
+       -  key: "kubernetes.io/lifecycle"
+          operator: In
+          values:
+              - spot
       labels:
         karpenter.sh/provisioner-name: default
   disruption:
