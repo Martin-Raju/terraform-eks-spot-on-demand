@@ -1,8 +1,6 @@
-
 # -------------------------
 # Provider Block
 # -------------------------
-
 provider "aws" {
   region = var.aws_region
 }
@@ -12,16 +10,18 @@ provider "aws" {
   region = "us-east-1"
 }
 
+provider "kubectl" {
+  host                   = module.eks.cluster_endpoint
+  cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+  token                  = data.aws_eks_cluster_auth.cluster.token
+}
+
 # -------------------------
 # Data Block
 # -------------------------
-
 data "aws_availability_zones" "available" {}
 
 data "aws_caller_identity" "current" {}
-locals {
-  iam_username = split("/", data.aws_caller_identity.current.arn)[1]
-}
 
 data "aws_ami" "amazon_linux" {
   most_recent = true
@@ -37,10 +37,17 @@ data "aws_ecrpublic_authorization_token" "token" {
   provider = aws.virginia
 }
 
+data "aws_eks_cluster_auth" "cluster" {
+  name = var.cluster_name
+}
+
+locals {
+  iam_username = split("/", data.aws_caller_identity.current.arn)[1]
+}
+
 # -------------------------
 # VPC Module
 # -------------------------
-
 module "vpc" {
   source = "./modules/terraform-aws-vpc-6.4.0"
 
@@ -59,7 +66,6 @@ module "vpc" {
   tags = {
     "kubernetes.io/cluster/${var.cluster_name}" = "shared"
     "Environment"                               = var.environment
-
   }
 
   public_subnet_tags = {
@@ -78,38 +84,27 @@ module "vpc" {
 # -------------------------
 # EKS Cluster
 # -------------------------
-
 module "eks" {
   source                 = "./modules/terraform-aws-eks-21.3.2"
   name                   = var.cluster_name
   kubernetes_version     = var.kubernetes_version
   endpoint_public_access = var.eks_public_access_enabled
-  #endpoint_public_access                   = false
-  endpoint_private_access                  = true
+  endpoint_private_access = true
   enable_cluster_creator_admin_permissions = true
 
-  # -------------------------
   # EKS Add-ons
-  # -------------------------  
-
   addons = {
-    coredns = {}
-    eks-pod-identity-agent = {
-      before_compute = true
-    }
-    kube-proxy = {}
-    vpc-cni = {
-      before_compute = true
-    }
+    coredns                = {}
+    eks-pod-identity-agent = { before_compute = true }
+    kube-proxy              = {}
+    vpc-cni                 = { before_compute = true }
   }
+
   vpc_id                   = module.vpc.vpc_id
   subnet_ids               = module.vpc.private_subnets
   control_plane_subnet_ids = module.vpc.intra_subnets
 
-  # -------------------------
-  # Node Groups (Spot only)
-  # -------------------------
-
+  # Managed Node Group for Karpenter controller only
   eks_managed_node_groups = {
     karpenter = {
       ami_type       = "AL2023_x86_64_STANDARD"
@@ -118,17 +113,15 @@ module "eks" {
       min_size       = var.min_size
       max_size       = var.max_size
       desired_size   = var.desired_size
-
       labels = {
-        # Used to ensure Karpenter runs on nodes that it does not manage
         "karpenter.sh/controller" = "true"
       }
     }
   }
+
   node_security_group_tags = {
     "karpenter.sh/discovery" = var.cluster_name
   }
-
 
   tags = {
     cluster = var.cluster_name
@@ -136,126 +129,38 @@ module "eks" {
 }
 
 # -------------------------
-# Karpenter IAM Role & Instance Profile
+# Karpenter Module
 # -------------------------
-resource "aws_iam_role" "karpenter" {
-  name = "${var.cluster_name}-karpenter"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect    = "Allow"
-      Principal = { Service = "ec2.amazonaws.com" }
-      Action    = "sts:AssumeRole"
-    }]
-  })
-
-  tags = {
-    "karpenter.sh/discovery" = var.cluster_name
-  }
-}
-
-resource "aws_iam_role_policy_attachment" "karpenter_ssm" {
-  role       = aws_iam_role.karpenter.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-}
-
-resource "aws_iam_role_policy_attachment" "karpenter_worker" {
-  role       = aws_iam_role.karpenter.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
-}
-
-resource "aws_iam_role_policy_attachment" "karpenter_cni" {
-  role       = aws_iam_role.karpenter.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
-}
-
-resource "aws_iam_instance_profile" "karpenter_profile" {
-  name = "${var.cluster_name}-karpenter-profile"
-  role = aws_iam_role.karpenter.name
-}
-
-# -------------------------
-# Karpenter
-# -------------------------
-
 module "karpenter" {
   source       = "./modules/terraform-aws-eks-21.3.2/modules/karpenter"
   cluster_name = var.cluster_name
 
   node_iam_role_use_name_prefix   = false
-  node_iam_role_name              = aws_iam_role.karpenter.name
+  node_iam_role_name              = "${var.cluster_name}-karpenter"
   create_pod_identity_association = true
 
   node_iam_role_additional_policies = {
     AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
   }
+
   tags = {
-
     "karpenter.sh/discovery" = module.eks.cluster_name
-
   }
+
   depends_on = [
     module.eks,
-    aws_iam_instance_profile.karpenter_profile
   ]
 }
 
 # -------------------------
-# Karpenter Node Class & Node Template
+# Optional: Karpenter Provisioner (autoscaling)
 # -------------------------
-resource "karpenter_aws_ec2_node_class" "default" {
-  metadata {
-    name = "karpenter-nodeclass"
-  }
-
-  spec {
-    ami_family       = "AL2023"
-    instance_profile = aws_iam_instance_profile.karpenter_profile.name
-
-    subnet_selector {
-      karpenter_sh_discovery = var.cluster_name
-    }
-
-    security_group_selector {
-      karpenter_sh_discovery = var.cluster_name
-    }
-  }
-}
-
-resource "karpenter_node_template" "default" {
-  metadata {
-    name = "karpenter-nodetemplate"
-  }
-
-  spec {
-    cluster        = var.cluster_name
-    capacity_type  = "spot"
-    instance_types = var.instance_types
-  }
-}
-
-resource "karpenter_provisioner" "default" {
-  metadata {
-    name = "karpenter-provisioner"
-  }
-
-  spec {
-    cluster                 = var.cluster_name
-    ttl_seconds_after_empty = 30
-
-    requirements {
-      key      = "kubernetes.io/arch"
-      operator = "In"
-      values   = ["amd64"]
-    }
-
-    provider {
-      node_template = karpenter_node_template.default.metadata[0].name
-    }
-  }
-}
-
+#resource "kubectl_manifest" "karpenter_provisioner" {
+#  yaml_body = file("${path.module}/karpenter-provisioner.yaml")
+#  depends_on = [
+#    module.karpenter
+#  ]
+#}
 
 # -------------------------
 # Bastion Security Group
@@ -266,44 +171,25 @@ module "bastion_sg" {
   description = "Security group for Bastion host"
   vpc_id      = module.vpc.vpc_id
 
-  # SSH from your IP
-  ingress_with_cidr_blocks = [
-    {
-      from_port   = 22
-      to_port     = 22
-      protocol    = "tcp"
-      cidr_blocks = "0.0.0.0/0"
-      description = "SSH access"
-    }
-  ]
+  ingress_with_cidr_blocks = [{
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = "0.0.0.0/0"
+    description = "SSH access"
+  }]
 
-  # Outbound to reach private EKS API
   egress_with_cidr_blocks = [
-    {
-      from_port   = 443
-      to_port     = 443
-      protocol    = "tcp"
-      cidr_blocks = "0.0.0.0/0"
-      description = "HTTPS to private EKS"
-    },
-    {
-      from_port   = 0
-      to_port     = 0
-      protocol    = "-1"
-      cidr_blocks = "0.0.0.0/0"
-      description = "Allow all outbound"
-    }
+    { from_port = 443, to_port = 443, protocol = "tcp", cidr_blocks = "0.0.0.0/0", description = "HTTPS to private EKS" },
+    { from_port = 0, to_port = 0, protocol = "-1", cidr_blocks = "0.0.0.0/0", description = "Allow all outbound" }
   ]
 
-  tags = {
-    Name = "${var.environment}-bastion-sg"
-  }
+  tags = { Name = "${var.environment}-bastion-sg" }
 }
 
 # -------------------------
 # Bastion EC2 Module
 # -------------------------
-
 module "bastion_ec2" {
   source                      = "./modules/terraform-aws-ec2-instance-6.1.1"
   name                        = "${var.cluster_name}-bastion"
@@ -318,22 +204,15 @@ module "bastion_ec2" {
     #!/bin/bash
     yum update -y
     yum install -y curl unzip
-
-    # AWS CLI v2
     curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
     unzip awscliv2.zip
     sudo ./aws/install
-
-    # kubectl latest
     curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
     chmod +x kubectl
     sudo mv kubectl /usr/local/bin/
-
   EOF
 
-  tags = {
-    Name = "${var.environment}-bastion"
-  }
+  tags = { Name = "${var.environment}-bastion" }
 }
 
 # -------------------------
