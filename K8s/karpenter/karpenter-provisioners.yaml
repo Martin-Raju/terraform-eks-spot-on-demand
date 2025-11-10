@@ -26,39 +26,29 @@ spec:
 
 ---
 
-# --- Karpenter Provisioner (replaces NodePool) ---
-apiVersion: karpenter.sh/v1alpha5
+apiVersion: karpenter.sh/v1
 kind: Provisioner
 metadata:
   name: default
+  namespace: kube-system   # <--- must match your namespace
 spec:
-  provider:
-    subnetSelector:
-      karpenter.sh/discovery: ${CLUSTER_NAME}
-    securityGroupSelector:
-      karpenter.sh/discovery: ${CLUSTER_NAME}
-    instanceProfile: ${CLUSTER_NAME}-karpenter
   requirements:
     - key: "node.kubernetes.io/instance-type"
       operator: In
-      values:
-        - t3a.medium
-        - t3a.small
-        - t3.medium
-        - t3.small
+      values: ["t3a.medium","t3a.small","t3.medium","t3.small"]
     - key: "kubernetes.io/arch"
       operator: In
-      values:
-        - amd64
+      values: ["amd64"]
     - key: "node.kubernetes.io/lifecycle"
       operator: In
-      values:
-        - spot
-  labels:
-    karpenter.sh/provisioner-name: default
+      values: ["spot"]
+  provider:
+    subnetSelector:
+      karpenter.sh/discovery: test-poc-cluster
+    securityGroupSelector:
+      karpenter.sh/discovery: test-poc-cluster
   ttlSecondsAfterEmpty: 30
-  consolidation:
-    enabled: true
+
 
 
 # # --- EC2NodeClass ---
