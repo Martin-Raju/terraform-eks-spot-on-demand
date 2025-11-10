@@ -171,37 +171,37 @@ resource "kubernetes_namespace" "karpenter" {
 # -------------------------
 # Helm release for Karpenter
 # -------------------------
+
 resource "helm_release" "karpenter" {
   name       = "karpenter"
-  namespace  = kubernetes_namespace.karpenter.metadata[0].name
   repository = "oci://public.ecr.aws/karpenter/karpenter"
   chart      = "karpenter"
+  namespace  = "karpenter"
   version    = "1.8.2"
+  create_namespace = true
 
-  set {
-    name  = "serviceAccount.create"
-    value = "false"
-  }
-
-  set {
-    name  = "serviceAccount.name"
-    value = aws_iam_role.karpenter.name
-  }
-
-  set {
-    name  = "clusterName"
-    value = var.cluster_name
-  }
-
-  set {
-    name  = "aws.defaultInstanceProfile"
-    value = aws_iam_instance_profile.karpenter.name
-  }
-
-  set {
-    name  = "aws.interruptHandler"
-    value = "true"
-  }
+  set = [
+    {
+      name  = "serviceAccount.create"
+      value = "false"
+    },
+    {
+      name  = "serviceAccount.name"
+      value = "${var.cluster_name}-karpenter"
+    },
+    {
+      name  = "clusterName"
+      value = var.cluster_name
+    },
+    {
+      name  = "clusterEndpoint"
+      value = module.eks.cluster_endpoint
+    },
+    {
+      name  = "aws.defaultInstanceProfile"
+      value = "${var.cluster_name}-karpenter"
+    }
+  ]
 
   depends_on = [module.eks]
 }
