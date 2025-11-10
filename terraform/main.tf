@@ -17,7 +17,7 @@ provider "kubectl" {
 }
 
 provider "helm" {
-  kubernetes {
+  kubernetes = {
     host                   = module.eks.cluster_endpoint
     cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
     token                  = data.aws_eks_cluster_auth.cluster.token
@@ -179,6 +179,7 @@ resource "helm_release" "karpenter" {
   version    = "1.8.2"
   namespace  = "karpenter"
   create_namespace = true
+  repository_type = "oci"
 
   set = [
     {
@@ -204,8 +205,6 @@ resource "helm_release" "karpenter" {
   ]
 
   depends_on = [module.eks]
-
-  repository_type = "oci"
 }
 
 # -------------------------
