@@ -1,5 +1,5 @@
 # -------------------------
-# Provider Block
+# Providers
 # -------------------------
 provider "aws" {
   region = var.aws_region
@@ -16,8 +16,16 @@ provider "kubectl" {
   token                  = data.aws_eks_cluster_auth.cluster.token
 }
 
+provider "helm" {
+  kubernetes {
+    host                   = module.eks.cluster_endpoint
+    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+    token                  = data.aws_eks_cluster_auth.cluster.token
+  }
+}
+
 # -------------------------
-# Data Block
+# Data Sources
 # -------------------------
 data "aws_availability_zones" "available" {}
 
@@ -26,15 +34,10 @@ data "aws_caller_identity" "current" {}
 data "aws_ami" "amazon_linux" {
   most_recent = true
   owners      = ["amazon"]
-
   filter {
     name   = "name"
     values = ["amzn2-ami-hvm-*-x86_64-gp2"]
   }
-}
-
-data "aws_ecrpublic_authorization_token" "token" {
-  provider = aws.virginia
 }
 
 data "aws_eks_cluster_auth" "cluster" {
@@ -82,7 +85,7 @@ module "vpc" {
 }
 
 # -------------------------
-# EKS Cluster
+# EKS Cluster Module
 # -------------------------
 module "eks" {
   source                 = "./modules/terraform-aws-eks-21.3.2"
@@ -92,7 +95,6 @@ module "eks" {
   endpoint_private_access = true
   enable_cluster_creator_admin_permissions = true
 
-  # EKS Add-ons
   addons = {
     coredns                = {}
     eks-pod-identity-agent = { before_compute = true }
@@ -104,7 +106,7 @@ module "eks" {
   subnet_ids               = module.vpc.private_subnets
   control_plane_subnet_ids = module.vpc.intra_subnets
 
-  # Managed Node Group for Karpenter controller only
+  # Node Group for Karpenter Controller
   eks_managed_node_groups = {
     karpenter = {
       ami_type       = "AL2023_x86_64_STANDARD"
@@ -129,38 +131,99 @@ module "eks" {
 }
 
 # -------------------------
-# Karpenter Module
+# Karpenter IAM Role
 # -------------------------
-module "karpenter" {
-  source       = "./modules/terraform-aws-eks-21.3.2/modules/karpenter"
-  cluster_name = var.cluster_name
+resource "aws_iam_role" "karpenter" {
+  name = "${var.cluster_name}-karpenter"
 
-  node_iam_role_use_name_prefix   = false
-  node_iam_role_name              = "${var.cluster_name}-karpenter"
-  create_pod_identity_association = true
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        Service = "karpenter.k8s.aws"
+      }
+      Action = "sts:AssumeRole"
+    }]
+  })
+}
 
-  node_iam_role_additional_policies = {
-    AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-  }
+resource "aws_iam_role_policy_attachment" "karpenter_ssm" {
+  role       = aws_iam_role.karpenter.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
 
-  tags = {
-    "karpenter.sh/discovery" = module.eks.cluster_name
-  }
-
-  depends_on = [
-    module.eks,
-  ]
+resource "aws_iam_instance_profile" "karpenter" {
+  name = "${var.cluster_name}-karpenter-profile"
+  role = aws_iam_role.karpenter.name
 }
 
 # -------------------------
-# Optional: Karpenter Provisioner (autoscaling)
+# Karpenter Namespace
 # -------------------------
-#resource "kubectl_manifest" "karpenter_provisioner" {
-#  yaml_body = file("${path.module}/karpenter-provisioner.yaml")
-#  depends_on = [
-#    module.karpenter
-#  ]
-#}
+resource "kubernetes_namespace" "karpenter" {
+  metadata {
+    name = "karpenter"
+  }
+}
+
+# -------------------------
+# Helm release for Karpenter
+# -------------------------
+resource "helm_release" "karpenter" {
+  name       = "karpenter"
+  namespace  = kubernetes_namespace.karpenter.metadata[0].name
+  repository = "oci://public.ecr.aws/karpenter/karpenter"
+  chart      = "karpenter"
+  version    = "1.8.2"
+
+  set {
+    name  = "serviceAccount.create"
+    value = "false"
+  }
+
+  set {
+    name  = "serviceAccount.name"
+    value = aws_iam_role.karpenter.name
+  }
+
+  set {
+    name  = "clusterName"
+    value = var.cluster_name
+  }
+
+  set {
+    name  = "aws.defaultInstanceProfile"
+    value = aws_iam_instance_profile.karpenter.name
+  }
+
+  set {
+    name  = "aws.interruptHandler"
+    value = "true"
+  }
+
+  depends_on = [module.eks]
+}
+
+# -------------------------
+# Karpenter Provisioner (autoscaling)
+# -------------------------
+resource "kubectl_manifest" "karpenter_provisioner" {
+  yaml_body = <<EOF
+apiVersion: karpenter.sh/v1alpha5
+kind: Provisioner
+metadata:
+  name: default
+spec:
+  ttlSecondsAfterEmpty: 30
+  provider:
+    subnetSelector:
+      karpenter.sh/discovery: ${var.cluster_name}
+    securityGroupSelector:
+      karpenter.sh/discovery: ${var.cluster_name}
+EOF
+  depends_on = [helm_release.karpenter]
+}
 
 # -------------------------
 # Bastion Security Group
@@ -188,7 +251,7 @@ module "bastion_sg" {
 }
 
 # -------------------------
-# Bastion EC2 Module
+# Bastion EC2
 # -------------------------
 module "bastion_ec2" {
   source                      = "./modules/terraform-aws-ec2-instance-6.1.1"
