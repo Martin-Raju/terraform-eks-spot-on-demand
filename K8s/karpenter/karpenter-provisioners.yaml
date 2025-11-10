@@ -17,7 +17,7 @@ spec:
   blockDeviceMappings:
     - deviceName: /dev/xvda
       ebs:
-        volumeSize: "120"       # must be string
+        volumeSize: "80Gi"       # must be string
         volumeType: gp3
         deleteOnTermination: true
   tags:
