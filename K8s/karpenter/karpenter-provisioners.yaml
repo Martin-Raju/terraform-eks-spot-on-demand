@@ -35,7 +35,7 @@ kind: EC2NodeClass
 metadata:
   name: default
 spec:
-  role: "KarpenterNodeRole-${CLUSTER_NAME}"
+  role: "${CLUSTER_NAME}-karpenter"
   amiSelectorTerms:
     - alias: "al2023@latest"
   subnetSelectorTerms:
