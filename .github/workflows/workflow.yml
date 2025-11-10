@@ -126,7 +126,7 @@ jobs:
           #   --set settings.clusterEndpoint=$CLUSTER_ENDPOINT \
           #   --set webhook.enabled=false \
           #   --wait 
-           helm upgrade --install karpenter oci://public.ecr.aws/karpenter/karpenter --version "1.8.2" --namespace "karpenter" --create-namespace \
+           helm upgrade --install karpenter oci://public.ecr.aws/karpenter/karpenter --version "1.8.2" \
             --set "settings.clusterName=${CLUSTER_NAME}" \
             --set "settings.interruptionQueue=${CLUSTER_NAME}" \
             --set controller.resources.requests.cpu=1 \
