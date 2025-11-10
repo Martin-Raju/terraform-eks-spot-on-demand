@@ -132,98 +132,12 @@ module "eks" {
 }
 
 # -------------------------
-# Karpenter IAM Role
-# -------------------------
-resource "aws_iam_role" "karpenter" {
-  name = "${var.cluster_name}-karpenter"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect = "Allow"
-      Principal = {
-        Service = "karpenter.k8s.aws"
-      }
-      Action = "sts:AssumeRole"
-    }]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "karpenter_ssm" {
-  role       = aws_iam_role.karpenter.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-}
-
-resource "aws_iam_instance_profile" "karpenter" {
-  name = "${var.cluster_name}-karpenter-profile"
-  role = aws_iam_role.karpenter.name
-}
-
-# -------------------------
 # Karpenter Namespace
 # -------------------------
 resource "kubernetes_namespace" "karpenter" {
   metadata {
     name = "karpenter"
   }
-}
-
-# -------------------------
-# Helm release for Karpenter
-# -------------------------
-
-resource "helm_release" "karpenter" {
-  name       = "karpenter"
-  repository = "oci://public.ecr.aws/karpenter/karpenter"
-  chart      = "karpenter"          # only the chart name
-  version    = "1.8.2"
-  namespace  = "karpenter"
-  create_namespace = true
-
-  set = [
-    {
-      name  = "serviceAccount.create"
-      value = "false"
-    },
-    {
-      name  = "serviceAccount.name"
-      value = "${var.cluster_name}-karpenter"
-    },
-    {
-      name  = "clusterName"
-      value = var.cluster_name
-    },
-    {
-      name  = "clusterEndpoint"
-      value = module.eks.cluster_endpoint
-    },
-    {
-      name  = "aws.defaultInstanceProfile"
-      value = "${var.cluster_name}-karpenter"
-    }
-  ]
-
-  depends_on = [module.eks]
-}
-
-# -------------------------
-# Karpenter Provisioner (autoscaling)
-# -------------------------
-resource "kubectl_manifest" "karpenter_provisioner" {
-  yaml_body = <<EOF
-apiVersion: karpenter.sh/v1alpha5
-kind: Provisioner
-metadata:
-  name: default
-spec:
-  ttlSecondsAfterEmpty: 30
-  provider:
-    subnetSelector:
-      karpenter.sh/discovery: ${var.cluster_name}
-    securityGroupSelector:
-      karpenter.sh/discovery: ${var.cluster_name}
-EOF
-  depends_on = [helm_release.karpenter]
 }
 
 # -------------------------
