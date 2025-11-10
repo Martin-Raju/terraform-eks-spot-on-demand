@@ -19,7 +19,7 @@ spec:
   blockDeviceMappings:
     - deviceName: /dev/xvda
       ebs:
-        volumeSize: 80Gi
+        volumeSize: 120GiB
         volumeType: gp3
         deleteOnTermination: true
   #amiSelectorTerms:
