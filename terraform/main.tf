@@ -179,7 +179,6 @@ resource "helm_release" "karpenter" {
   version    = "1.8.2"
   namespace  = "karpenter"
   create_namespace = true
-  repository_type = "oci"
 
   set = [
     {
