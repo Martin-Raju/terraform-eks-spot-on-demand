@@ -46,13 +46,15 @@ spec:
         - key: "node.kubernetes.io/instance-type"
           operator: In
           values:
-         #     - t3.medium
+              - t3.medium
               - t3.small
         - key: "kubernetes.io/arch"
           operator: In
           values: ["amd64"]
+      capacityType: SPOT
+      expireAfter: 5m
+      labels:
+        karpenter.sh/provisioner-name: default
   disruption:
     consolidateAfter: 30s
     consolidationPolicy: WhenEmpty
-    
-
