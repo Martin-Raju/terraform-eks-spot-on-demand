@@ -54,10 +54,10 @@ spec:
           operator: In
           values: 
               - amd64
-       -  key: "kubernetes.io/lifecycle"
-          operator: In
-          values:
-              - spot
+       # -  key: "kubernetes.io/lifecycle"
+       #    operator: In
+       #    values:
+       #        - spot
       labels:
         karpenter.sh/provisioner-name: default
   disruption:
