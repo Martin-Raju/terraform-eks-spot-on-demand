@@ -58,8 +58,8 @@ spec:
        #    operator: In
        #    values:
        #        - spot
-      labels:
-        karpenter.sh/provisioner-name: default
+      # labels:
+      #   karpenter.sh/provisioner-name: default
   disruption:
     consolidateAfter: 30s
     consolidationPolicy: WhenEmpty
