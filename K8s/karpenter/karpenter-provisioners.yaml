@@ -9,7 +9,7 @@ spec:
   amiSelectorTerms:
     - alias: al2023@latest
   #role: ${CLUSTER_NAME}-karpenter
-  instanceProfile: test-poc-cluster_15843455441266977890
+  instanceProfile: ${CLUSTER_NAME}_instance_profile
   subnetSelectorTerms:
     - tags:
         karpenter.sh/discovery: ${CLUSTER_NAME}
