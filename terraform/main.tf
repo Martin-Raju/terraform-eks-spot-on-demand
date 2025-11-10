@@ -38,17 +38,6 @@ data "aws_ecrpublic_authorization_token" "token" {
 }
 
 # -------------------------
-# Label Module
-# -------------------------
-
-#module "label" {
-#  source           = "./modules/terraform-null-label-0.25.0"
-#  name             = var.cluster_name
-#  environment      = var.environment
-#  label_value_case = "lower"
-#}
-
-# -------------------------
 # VPC Module
 # -------------------------
 
@@ -147,6 +136,46 @@ module "eks" {
 }
 
 # -------------------------
+# Karpenter IAM Role & Instance Profile
+# -------------------------
+resource "aws_iam_role" "karpenter" {
+  name = "${var.cluster_name}-karpenter"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "ec2.amazonaws.com" }
+      Action    = "sts:AssumeRole"
+    }]
+  })
+
+  tags = {
+    "karpenter.sh/discovery" = var.cluster_name
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "karpenter_ssm" {
+  role       = aws_iam_role.karpenter.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+resource "aws_iam_role_policy_attachment" "karpenter_worker" {
+  role       = aws_iam_role.karpenter.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
+}
+
+resource "aws_iam_role_policy_attachment" "karpenter_cni" {
+  role       = aws_iam_role.karpenter.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
+}
+
+resource "aws_iam_instance_profile" "karpenter_profile" {
+  name = "${var.cluster_name}-karpenter-profile"
+  role = aws_iam_role.karpenter.name
+}
+
+# -------------------------
 # Karpenter
 # -------------------------
 
@@ -155,7 +184,7 @@ module "karpenter" {
   cluster_name = var.cluster_name
 
   node_iam_role_use_name_prefix   = false
-  node_iam_role_name              = "${var.cluster_name}-karpenter"
+  node_iam_role_name              = aws_iam_role.karpenter.name
   create_pod_identity_association = true
 
   node_iam_role_additional_policies = {
@@ -168,20 +197,65 @@ module "karpenter" {
   }
   depends_on = [
     module.eks
+    aws_iam_instance_profile.karpenter_profile
   ]
 }
 
-#resource "aws_iam_instance_profile" "karpenter_profile" {
-#  name = "${var.cluster_name}_instance_profile"
-#  role = "${var.cluster_name}-karpenter"
+# -------------------------
+# Karpenter Node Class & Node Template
+# -------------------------
+resource "karpenter_aws_ec2_node_class" "default" {
+  metadata {
+    name = "karpenter-nodeclass"
+  }
 
-#  tags = {
-#    Name = "${var.cluster_name}-karpenter-profile"
-#  }
-#  depends_on = [
-#    module.karpenter
-#  ]
-#}
+  spec {
+    ami_family       = "AL2023"
+    instance_profile = aws_iam_instance_profile.karpenter_profile.name
+
+    subnet_selector {
+      karpenter_sh_discovery = var.cluster_name
+    }
+
+    security_group_selector {
+      karpenter_sh_discovery = var.cluster_name
+    }
+  }
+}
+
+resource "karpenter_node_template" "default" {
+  metadata {
+    name = "karpenter-nodetemplate"
+  }
+
+  spec {
+    cluster        = var.cluster_name
+    capacity_type  = "spot"
+    instance_types = var.instance_types
+  }
+}
+
+resource "karpenter_provisioner" "default" {
+  metadata {
+    name = "karpenter-provisioner"
+  }
+
+  spec {
+    cluster                 = var.cluster_name
+    ttl_seconds_after_empty = 30
+
+    requirements {
+      key      = "kubernetes.io/arch"
+      operator = "In"
+      values   = ["amd64"]
+    }
+
+    provider {
+      node_template = karpenter_node_template.default.metadata[0].name
+    }
+  }
+}
+
 
 # -------------------------
 # Bastion Security Group
