@@ -26,28 +26,48 @@ spec:
 
 ---
 
-apiVersion: karpenter.sh/v1
+apiVersion: karpenter.sh/v1alpha5
 kind: Provisioner
 metadata:
   name: default
-  namespace: kube-system   # <--- must match your namespace
 spec:
+  # Labels applied to all nodes created by this provisioner
+  labels:
+    karpenter.sh/provisioner-name: default
+    purpose: spot
+  # Node requirements
   requirements:
     - key: "node.kubernetes.io/instance-type"
       operator: In
-      values: ["t3a.medium","t3a.small","t3.medium","t3.small"]
+      values:
+        - t3.small
+        - t3.medium
+        - t3a.small
+        - t3a.medium
     - key: "kubernetes.io/arch"
       operator: In
-      values: ["amd64"]
-    - key: "node.kubernetes.io/lifecycle"
+      values:
+        - amd64
+    - key: "kubernetes.io/lifecycle"
       operator: In
-      values: ["spot"]
+      values:
+        - spot
+  ttlSecondsAfterEmpty: 300  # 5 minutes
+  consolidation:
+    enabled: true
   provider:
     subnetSelector:
-      karpenter.sh/discovery: test-poc-cluster
+      karpenter.sh/discovery: ${CLUSTER_NAME}
     securityGroupSelector:
-      karpenter.sh/discovery: test-poc-cluster
-  ttlSecondsAfterEmpty: 30
+      karpenter.sh/discovery: ${CLUSTER_NAME}
+    amiFamily: AL2023
+    blockDeviceMappings:
+      - deviceName: /dev/xvda
+        ebs:
+          volumeSize: "120Gi"
+          volumeType: gp3
+          deleteOnTermination: true
+
 
 
 
