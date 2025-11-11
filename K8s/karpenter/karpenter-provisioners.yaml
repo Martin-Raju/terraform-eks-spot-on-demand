@@ -19,9 +19,6 @@ spec:
           operator: In
           values:
                - t3a.medium
-               - t3a.small
-               - t3.medium
-               - t3.small
       nodeClassRef:
         group: karpenter.k8s.aws
         kind: EC2NodeClass
