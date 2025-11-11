@@ -37,16 +37,6 @@ data "aws_ecrpublic_authorization_token" "token" {
   provider = aws.virginia
 }
 
-# -------------------------
-# Label Module
-# -------------------------
-
-#module "label" {
-#  source           = "./modules/terraform-null-label-0.25.0"
-#  name             = var.cluster_name
-#  environment      = var.environment
-#  label_value_case = "lower"
-#}
 
 # -------------------------
 # VPC Module
@@ -170,18 +160,6 @@ module "karpenter" {
     module.eks
   ]
 }
-
-#resource "aws_iam_instance_profile" "karpenter_profile" {
-#  name = "${var.cluster_name}_instance_profile"
-#  role = "${var.cluster_name}-karpenter"
-
-#  tags = {
-#    Name = "${var.cluster_name}-karpenter-profile"
-#  }
-#  depends_on = [
-#    module.karpenter
-#  ]
-#}
 
 # -------------------------
 # Bastion Security Group
