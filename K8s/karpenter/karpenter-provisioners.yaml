@@ -57,7 +57,6 @@ spec:
   amiSelectorTerms:
     - alias: al2023@latest
   role: ${CLUSTER_NAME}-karpenter
-  #instanceProfile: ${CLUSTER_NAME}_instance_profile
   subnetSelectorTerms:
     - tags:
         karpenter.sh/discovery: ${CLUSTER_NAME}
@@ -69,9 +68,7 @@ spec:
       ebs:
         volumeSize: 80Gi
         volumeType: gp3
-        deleteOnTermination: true
-  #amiSelectorTerms:
-  #  - id: ami-05473caa821530341                    
+        deleteOnTermination: true                    
   tags:
     Name: karpenter-node
     managed-by: karpenter
