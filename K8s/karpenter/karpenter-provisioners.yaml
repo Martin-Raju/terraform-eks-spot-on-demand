@@ -33,7 +33,8 @@ kind: EC2NodeClass
 metadata:
   name: default
 spec:
-  role: "${CLUSTER_NAME}-karpenter"
+  #role: "${CLUSTER_NAME}-karpenter"
+  instanceProfile: poc-cluster_5478753104919847931
   amiSelectorTerms:
     - alias: "al2023@latest"
   subnetSelectorTerms:
