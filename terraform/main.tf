@@ -85,7 +85,6 @@ module "eks" {
   name                   = var.cluster_name
   kubernetes_version     = var.kubernetes_version
   endpoint_public_access = var.eks_public_access_enabled
-  #endpoint_public_access                   = false
   endpoint_private_access                  = true
   enable_cluster_creator_admin_permissions = true
 
@@ -121,7 +120,6 @@ module "eks" {
       desired_size   = var.desired_size
 
       labels = {
-        # Used to ensure Karpenter runs on nodes that it does not manage
         "karpenter.sh/controller" = "true"
       }
     }
