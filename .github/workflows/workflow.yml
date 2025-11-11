@@ -118,22 +118,15 @@ jobs:
 
       - name: Install Karpenter Helm Chart
         run: |
-          # helm upgrade --install karpenter oci://public.ecr.aws/karpenter/karpenter \
-          #   --version 1.8.2 \
-          #   --namespace kube-system \
-          #   --create-namespace \
-          #   --set settings.clusterName=$CLUSTER_NAME \
-          #   --set settings.clusterEndpoint=$CLUSTER_ENDPOINT \
-          #   --set webhook.enabled=false \
-          #   --wait 
-           helm upgrade --install karpenter oci://public.ecr.aws/karpenter/karpenter --version "1.8.2" \
-            --set "settings.clusterName=${CLUSTER_NAME}" \
-            --set "settings.interruptionQueue=${CLUSTER_NAME}" \
-            --set controller.resources.requests.cpu=1 \
-            --set controller.resources.requests.memory=1Gi \
-            --set controller.resources.limits.cpu=1 \
-            --set controller.resources.limits.memory=1Gi \
-            --wait
+          helm upgrade --install karpenter oci://public.ecr.aws/karpenter/karpenter \
+            --version 1.8.2 \
+            --namespace kube-system \
+            --create-namespace \
+            --set settings.clusterName=$CLUSTER_NAME \
+            --set settings.clusterEndpoint=$CLUSTER_ENDPOINT \
+            --set webhook.enabled=false \
+            --wait 
+
 
       #- name: Apply Karpenter CRDs
       #  run: |
