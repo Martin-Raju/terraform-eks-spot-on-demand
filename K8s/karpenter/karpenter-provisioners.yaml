@@ -66,7 +66,7 @@ spec:
   blockDeviceMappings:
     - deviceName: /dev/xvda
       ebs:
-        volumeSize: 120Gi
+        volumeSize: 80Gi
         volumeType: gp3
         deleteOnTermination: true
   #amiSelectorTerms:
@@ -93,14 +93,11 @@ spec:
         - key: "node.kubernetes.io/instance-type"
           operator: In
           values:
-              - t3a.medium
-              - t3a.small
               - t3.medium
               - t3.small
         - key: "kubernetes.io/arch"
           operator: In
-          values: 
-              - amd64
+          values: ["amd64"]
   disruption:
     consolidateAfter: 30s
     consolidationPolicy: WhenEmpty
