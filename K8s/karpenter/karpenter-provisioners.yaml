@@ -50,6 +50,10 @@ spec:
         - key: "kubernetes.io/arch"
           operator: In
           values: ["amd64"]
+  limits:
+    resources:
+      cpu: "8"
+      memory: 16Gi
   disruption:
     consolidateAfter: 10s
     consolidationPolicy: WhenEmptyOrUnderutilized
