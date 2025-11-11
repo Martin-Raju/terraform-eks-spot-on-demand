@@ -54,7 +54,7 @@ spec:
     cpu: 10
     memory: 32Gi
     # For static NodePools, only nodes limit is allowed
-    nodes: 2
+    nodes: 4
   disruption:
     consolidateAfter: 10s
     consolidationPolicy: WhenEmptyOrUnderutilized
