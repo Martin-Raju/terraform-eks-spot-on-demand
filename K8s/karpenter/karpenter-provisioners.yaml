@@ -51,9 +51,10 @@ spec:
           operator: In
           values: ["amd64"]
   limits:
-    resources:
-      cpu: "8"
-      memory: 16Gi
+    cpu: 10
+    memory: 32Gi
+    # For static NodePools, only nodes limit is allowed
+    nodes: 2
   disruption:
     consolidateAfter: 10s
     consolidationPolicy: WhenEmptyOrUnderutilized
