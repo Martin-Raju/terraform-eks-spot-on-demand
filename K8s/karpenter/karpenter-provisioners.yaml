@@ -52,4 +52,4 @@ spec:
           values: ["amd64"]
   disruption:
     consolidateAfter: 10s
-    consolidationPolicy: WhenUnderutilized
+    consolidationPolicy: WhenEmptyOrUnderutilized
