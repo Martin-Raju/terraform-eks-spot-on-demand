@@ -11,6 +11,6 @@ ssh_key_name              = "test01"
 eks_public_access_enabled = "true"
 instance_types            = ["t3.large","t3.small","t3.medium"]
 min_size                  = "2"
-max_size                  = "3"
+max_size                  = "4"
 desired_size              = "2"
 bastion_instance_types    ="t3.micro"
