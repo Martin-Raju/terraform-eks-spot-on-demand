@@ -143,7 +143,6 @@ module "karpenter" {
   cluster_name = var.cluster_name
 
   node_iam_role_use_name_prefix   = false
-  create_node_iam_role            = true
   node_iam_role_name              = "${var.cluster_name}-karpenter"
   create_pod_identity_association = true
   node_iam_role_additional_policies = {
