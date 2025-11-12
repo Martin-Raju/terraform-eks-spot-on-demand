@@ -18,29 +18,6 @@ Infrastructure deployment and teardown are automated using **Terraform** and **G
 
 ---
 
-##  Repository Structure
-
-
-├── terraform/
-│     ├── main.tf
-│     ├── variables.tf
-│     ├── outputs.tf
-│     ├── terraform.tfvars
-│     ├── K8s/
-│     │    └── karpenter/
-│     │           └── karpenter-provisioners.yaml
-│     └── modules/
-│           ├── terraform-aws-vpc-6.4.0/
-│           ├── terraform-aws-eks-21.3.2/
-│           ├── terraform-aws-security-group-5.3.0/
-│           └── terraform-aws-ec2-instance-6.1.1/
-└── .github/
-      └── workflows/
-            ├── deploy-eks.yml
-            └── destroy-all.yml
-
----
-
 ## Key Terraform Variables
 
 | Variable | Description | Example |
