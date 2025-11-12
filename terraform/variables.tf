@@ -39,4 +39,33 @@ variable "ssh_key_name" {
   type        = string
 }
 
+variable "eks_public_access_enabled" {
+  description = "Set to true to deploy the Karpenter Helm chart. Set to false if using a separate runner for private EKS."
+  type        = bool
+}
+
+variable "instance_types" {
+  description = "List of instance types"
+  type        = list(string)
+}
+
+variable "min_size" {
+  description = "min_size"
+  type        = number
+}
+
+variable "max_size" {
+  description = "max_size"
+  type        = number
+}
+
+variable "desired_size" {
+  description = "desired_size"
+  type        = number
+}
+
+variable "bastion_instance_types" {
+  description = "List of instance types"
+  type        = string
+}
 

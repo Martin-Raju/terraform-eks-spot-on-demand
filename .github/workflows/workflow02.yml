@@ -1,5 +1,4 @@
 name: Destroy all
-
 on:
   workflow_dispatch:
 
@@ -12,6 +11,11 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
+    outputs:
+       cluster_name: ${{ steps.tf_outputs.outputs.cluster_name }}
+       cluster_endpoint: ${{ steps.tf_outputs.outputs.cluster_endpoint }}
+
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -20,15 +24,15 @@ jobs:
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.6.0
- 
+
       - name: Terraform Init
         working-directory: ./terraform
-        run: terraform init -input=false
+        run: terraform init -upgrade
 
       - name: Terraform Plan
         working-directory: ./terraform
-        run: terraform plan -input=false -out=tfplan
+        run: terraform plan -out=tfplan
 
-      - name: Terraform Apply
+      - name: Terraform Destroy
         working-directory: ./terraform
         run: terraform destroy -auto-approve

@@ -1,5 +1,15 @@
+
+# -------------------------
+# Provider Block
+# -------------------------
+
 provider "aws" {
   region = var.aws_region
+}
+
+provider "aws" {
+  alias  = "virginia"
+  region = "us-east-1"
 }
 
 # -------------------------
@@ -23,26 +33,25 @@ data "aws_ami" "amazon_linux" {
   }
 }
 
-# -------------------------
-# Label Module
-# -------------------------
-
-module "label" {
-  source      = "./modules/terraform-null-label"
-  name        = var.cluster_name
-  environment = var.environment
+data "aws_ecrpublic_authorization_token" "token" {
+  provider = aws.virginia
 }
+
 
 # -------------------------
 # VPC Module
 # -------------------------
+
 module "vpc" {
-  source               = "./modules/vpc"
-  name                 = "${module.label.environment}-vpc"
-  cidr                 = var.vpc_cidr
-  azs                  = data.aws_availability_zones.available.names
-  private_subnets      = var.private_subnets
-  public_subnets       = var.public_subnets
+  source = "./modules/terraform-aws-vpc-6.4.0"
+
+  name = "${var.cluster_name}-vpc"
+  cidr = var.vpc_cidr
+
+  azs             = data.aws_availability_zones.available.names
+  private_subnets = var.private_subnets
+  public_subnets  = var.public_subnets
+
   enable_nat_gateway   = true
   single_nat_gateway   = true
   enable_dns_hostnames = true
@@ -57,11 +66,13 @@ module "vpc" {
   public_subnet_tags = {
     "kubernetes.io/cluster/${var.cluster_name}" = "shared"
     "kubernetes.io/role/elb"                    = "1"
+    "karpenter.sh/discovery"                    = var.cluster_name
   }
 
   private_subnet_tags = {
     "kubernetes.io/cluster/${var.cluster_name}" = "shared"
     "kubernetes.io/role/internal-elb"           = "1"
+    "karpenter.sh/discovery"                    = var.cluster_name
   }
 }
 
@@ -70,47 +81,89 @@ module "vpc" {
 # -------------------------
 
 module "eks" {
-  #source                          = "./modules/terraform-aws-eks-21.3.1"
-  source                          = "./modules/eks"
-  cluster_name                    = "${module.label.environment}-EKS-cluster"
-  cluster_version                 = var.kubernetes_version
-  subnet_ids                      = module.vpc.private_subnets
-  vpc_id                          = module.vpc.vpc_id
-  enable_irsa                     = true
-  cluster_endpoint_public_access  = false
-  cluster_endpoint_private_access = true
+  source                 = "./modules/terraform-aws-eks-21.3.2"
+  name                   = var.cluster_name
+  kubernetes_version     = var.kubernetes_version
+  endpoint_public_access = var.eks_public_access_enabled
+  endpoint_private_access                  = true
+  enable_cluster_creator_admin_permissions = true
+
+  # -------------------------
+  # EKS Add-ons
+  # -------------------------  
+
+  addons = {
+    coredns = {}
+    eks-pod-identity-agent = {
+      before_compute = true
+    }
+    kube-proxy = {}
+    vpc-cni = {
+      before_compute = true
+    }
+  }
+  vpc_id                   = module.vpc.vpc_id
+  subnet_ids               = module.vpc.private_subnets
+  control_plane_subnet_ids = module.vpc.intra_subnets
+
+  # -------------------------
+  # Node Groups (Spot only)
+  # -------------------------
+
+  eks_managed_node_groups = {
+    karpenter = {
+      ami_type       = "AL2023_x86_64_STANDARD"
+      instance_types = var.instance_types
+      capacity_type  = "SPOT"
+      min_size       = var.min_size
+      max_size       = var.max_size
+      desired_size   = var.desired_size
+
+      labels = {
+        "karpenter.sh/controller" = "true"
+      }
+    }
+  }
+  node_security_group_tags = {
+    "karpenter.sh/discovery" = var.cluster_name
+  }
+
 
   tags = {
     cluster = var.cluster_name
   }
-  access_entries = {
-    user_access = {
-      principal_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/${local.iam_username}"
+}
 
-      policy_associations = {
-        admin = {
-          policy_arn   = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSAdminPolicy"
-          access_scope = { type = "cluster" }
-        }
+# -------------------------
+# Karpenter
+# -------------------------
 
-        cluster_admin = {
-          policy_arn   = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
-          access_scope = { type = "cluster" }
-        }
-      }
-    }
+module "karpenter" {
+  source       = "./modules/terraform-aws-eks-21.3.2/modules/karpenter"
+  cluster_name = var.cluster_name
+
+  node_iam_role_use_name_prefix   = false
+  node_iam_role_name              = "${var.cluster_name}-karpenter"
+  create_pod_identity_association = true
+  node_iam_role_additional_policies = {
+    AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
   }
+  tags = {
+
+    "karpenter.sh/discovery" = module.eks.cluster_name
+
+  }
+  depends_on = [
+    module.eks
+  ]
 }
 
 # -------------------------
 # Bastion Security Group
 # -------------------------
 module "bastion_sg" {
-  
-  #source  = "terraform-aws-modules/security-group/aws"
-  #version = "~> 5.0"
   source      = "./modules/terraform-aws-security-group-5.3.0"
-  name        = "${module.label.environment}-bastion-sg"
+  name        = "${var.cluster_name}-bastion-sg"
   description = "Security group for Bastion host"
   vpc_id      = module.vpc.vpc_id
 
@@ -151,13 +204,12 @@ module "bastion_sg" {
 # -------------------------
 # Bastion EC2 Module
 # -------------------------
+
 module "bastion_ec2" {
-  #source  = "terraform-aws-modules/ec2-instance/aws"
-  #version = "~> 4.0"
-  source                      = "./modules/terraform-aws-ec2-instance-4.5.0"
-  name                        = "${module.label.environment}-bastion"
+  source                      = "./modules/terraform-aws-ec2-instance-6.1.1"
+  name                        = "${var.cluster_name}-bastion"
   ami                         = data.aws_ami.amazon_linux.id
-  instance_type               = "t3.micro"
+  instance_type               = var.bastion_instance_types
   key_name                    = var.ssh_key_name
   subnet_id                   = module.vpc.public_subnets[0]
   vpc_security_group_ids      = [module.bastion_sg.security_group_id]
@@ -177,6 +229,7 @@ module "bastion_ec2" {
     curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
     chmod +x kubectl
     sudo mv kubectl /usr/local/bin/
+
   EOF
 
   tags = {
@@ -196,6 +249,3 @@ resource "aws_security_group_rule" "allow_bastion_to_eks" {
   source_security_group_id = module.bastion_sg.security_group_id
   description              = "Allow Bastion access to private EKS API"
 }
-
-
-
