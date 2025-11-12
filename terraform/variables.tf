@@ -51,17 +51,17 @@ variable "instance_types" {
 
 variable "min_size" {
   description = "min_size"
-  type        = string
+  type        = number
 }
 
 variable "max_size" {
   description = "max_size"
-  type        = string
+  type        = number
 }
 
 variable "desired_size" {
   description = "desired_size"
-  type        = string
+  type        = number
 }
 
 variable "bastion_instance_types" {
