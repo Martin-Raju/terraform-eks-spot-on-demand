@@ -1,4 +1,4 @@
-#  AWS EKS Cluster Deployment with Karpenter and Bastion Host  
+#  AWS EKS Cluster (Spot instances) Deployment with Karpenter and Bastion Host  
 *Automated with Terraform and GitHub Actions*
 
 This project provisions a **fully managed AWS EKS Cluster** with **Karpenter** for intelligent node provisioning and an **EC2 Bastion Host** for private access.  
