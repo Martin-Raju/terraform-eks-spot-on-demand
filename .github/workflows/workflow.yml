@@ -111,7 +111,14 @@ jobs:
       - name: Update kubeconfig
         run: |
           aws eks update-kubeconfig --name $CLUSTER_NAME --region $AWS_REGION
-
+      - name: Install Karpenter CRDs
+        run: |
+          helm upgrade --install karpenter-crd oci://public.ecr.aws/karpenter/karpenter-crd \
+             --version 1.8.2 \
+             --namespace kube-system \
+             --create-namespace \
+             --wait
+             
       - name: Install Karpenter Helm Chart
         run: |
           helm upgrade --install karpenter oci://public.ecr.aws/karpenter/karpenter \
